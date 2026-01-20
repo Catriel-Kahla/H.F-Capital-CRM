@@ -44,7 +44,7 @@ This initial release establishes the foundation of a Django-based Customer Relat
   - created_at
   - updated_at
 
-- **Lead Model** (in `leads` app):
+#### **Lead Model** (in `leads` app):
   - email (primary key)
   - company (ForeignKey to Company)
   - signup_date

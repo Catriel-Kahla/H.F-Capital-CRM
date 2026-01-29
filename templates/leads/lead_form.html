@@ -2,215 +2,115 @@
 
 {% block title %}{{ title }} - CRM Django{% endblock %}
 
-{% block extra_css %}
-<style>
-    .form-container {
-        max-width: 800px;
-        margin: 0 auto;
-    }
-    
-    .form-header {
-        margin-bottom: 30px;
-    }
-    
-    .form-header h1 {
-        font-size: 28px;
-        color: #333;
-        margin-bottom: 10px;
-    }
-    
-    .form-group {
-        margin-bottom: 20px;
-    }
-    
-    .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 600;
-        color: #333;
-    }
-    
-    .form-input, .form-select {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        font-size: 14px;
-        transition: border-color 0.3s;
-    }
-    
-    .form-input:focus, .form-select:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-    
-    .form-checkbox {
-        width: auto;
-        margin-right: 8px;
-    }
-    
-    .checkbox-label {
-        display: flex;
-        align-items: center;
-        font-weight: normal;
-    }
-    
-    .form-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 30px;
-    }
-    
-    .btn {
-        padding: 12px 24px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.3s;
-        text-decoration: none;
-        display: inline-block;
-    }
-    
-    .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-    
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-    
-    .btn-secondary {
-        background: #6c757d;
-        color: white;
-    }
-    
-    .btn-secondary:hover {
-        background: #5a6268;
-    }
-    
-    .errorlist {
-        list-style: none;
-        padding: 0;
-        margin: 5px 0 0 0;
-        color: #dc3545;
-        font-size: 14px;
-    }
-    
-    .form-error {
-        border-color: #dc3545 !important;
-    }
-    
-    .help-text {
-        font-size: 13px;
-        color: #6c757d;
-        margin-top: 5px;
-    }
-    
-    .form-row {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-    }
-</style>
-{% endblock %}
+{% block extra_css %}{% endblock %}
 
 {% block content %}
-<div class="form-container">
-    <div class="form-header">
-        <h1>{{ title }}</h1>
+<div class="ui segment">
+    <h2 class="ui header">{{ title }}</h2>
+    
+    <!-- Auto-calculated scoring info -->
+    <div class="ui info message">
+        <i class="close icon"></i>
+        <div class="header">💡 Lead Scoring is Automated</div>
+        <p>Lead score and stage are <strong>calculated automatically</strong> based on:</p>
+        <ul style="margin: 10px 0;">
+            <li>Session count & engagement</li>
+            <li>Team adoption (users per domain)</li>
+            <li>Job title hierarchy</li>
+            <li>Email type (enterprise vs. free)</li>
+            <li>Domain signals</li>
+        </ul>
+        <p style="margin: 10px 0;">Edit the fields below to trigger automatic score recalculation.</p>
     </div>
     
-    <form method="post">
+    <form method="post" class="ui form">
         {% csrf_token %}
-        
-        <div class="form-row">
-            <div class="form-group">
+
+        <div class="two fields">
+            <div class="field">
                 <label for="{{ form.email.id_for_label }}">Email *</label>
                 {{ form.email }}
                 {% if form.email.errors %}
-                    <ul class="errorlist">
-                        {% for error in form.email.errors %}
-                        <li>{{ error }}</li>
-                        {% endfor %}
-                    </ul>
+                    <div class="ui pointing red basic label">
+                        {% for error in form.email.errors %}{{ error }}{% endfor %}
+                    </div>
                 {% endif %}
             </div>
-            
-            <div class="form-group">
+
+            <div class="field">
                 <label for="{{ form.company.id_for_label }}">Company *</label>
                 {{ form.company }}
                 {% if form.company.errors %}
-                    <ul class="errorlist">
-                        {% for error in form.company.errors %}
-                        <li>{{ error }}</li>
-                        {% endfor %}
-                    </ul>
+                    <div class="ui pointing red basic label">
+                        {% for error in form.company.errors %}{{ error }}{% endfor %}
+                    </div>
                 {% endif %}
-                <p class="help-text">If it doesn't exist, <a href="{% url 'leads:company_create' %}" target="_blank">create it here</a></p>
+                <div class="ui tiny grey text">If it doesn't exist, <a href="{% url 'companies:company_create' %}" target="_blank">create it here</a></div>
             </div>
         </div>
-        
-        <div class="form-row">
-            <div class="form-group">
+
+        <div class="two fields">
+            <div class="field">
                 <label for="{{ form.pdl_first_name.id_for_label }}">First Name</label>
                 {{ form.pdl_first_name }}
             </div>
-            
-            <div class="form-group">
+            <div class="field">
                 <label for="{{ form.pdl_last_name.id_for_label }}">Last Name</label>
                 {{ form.pdl_last_name }}
             </div>
         </div>
-        
-        <div class="form-group">
+
+        <div class="field">
             <label for="{{ form.pdl_job_title.id_for_label }}">Job Title</label>
             {{ form.pdl_job_title }}
         </div>
-        
-        <div class="form-row">
-            <div class="form-group">
-                <label for="{{ form.lead_score.id_for_label }}">Score (0-100)</label>
+
+        <!-- Read-only Score and Stage (Auto-calculated) -->
+        <div class="two fields">
+            <div class="field">
+                <label for="{{ form.lead_score.id_for_label }}">{{ form.lead_score.label }}</label>
                 {{ form.lead_score }}
+                <small class="form-text text-muted">Auto-calculated on save</small>
             </div>
-            
-            <div class="form-group">
-                <label for="{{ form.lead_stage.id_for_label }}">Lead Stage</label>
+            <div class="field">
+                <label for="{{ form.lead_stage.id_for_label }}">{{ form.lead_stage.label }}</label>
                 {{ form.lead_stage }}
+                <small class="form-text text-muted">Auto-calculated on save</small>
             </div>
         </div>
-        
-        <div class="form-row">
-            <div class="form-group">
+
+        <div class="two fields">
+            <div class="field">
                 <label for="{{ form.hierarchical_level.id_for_label }}">Hierarchical Level</label>
                 {{ form.hierarchical_level }}
             </div>
-            
-            <div class="form-group">
+            <div class="field">
                 <label for="{{ form.email_status.id_for_label }}">Email Status</label>
                 {{ form.email_status }}
             </div>
         </div>
-        
-        <div class="form-group">
+
+        <div class="field">
             <label for="{{ form.crm_owner.id_for_label }}">CRM Owner</label>
             {{ form.crm_owner }}
         </div>
-        
-        <div class="form-group">
-            <label class="checkbox-label">
+
+        <div class="field">
+            <div class="ui checkbox">
                 {{ form.is_candidate_enterprise }}
-                Enterprise Candidate
-            </label>
+                <label>Enterprise Candidate</label>
+            </div>
         </div>
-        
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">💾 Save</button>
-            <a href="{% url 'leads:lead_list' %}" class="btn btn-secondary">Cancel</a>
-        </div>
+
+        <div class="ui divider"></div>
+        <button type="submit" class="ui primary button">Save</button>
+        <a href="{% url 'leads:lead_list' %}" class="ui button">Cancel</a>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $('.ui.checkbox').checkbox();
+</script>
 {% endblock %}

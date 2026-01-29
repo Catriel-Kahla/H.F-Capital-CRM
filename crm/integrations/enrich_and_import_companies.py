@@ -46,7 +46,8 @@ gpt_client = OpenAI(api_key=OPENAI_API_KEY)
 FREE_EMAIL_DOMAINS = {
     'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
     'icloud.com', 'mail.com', 'protonmail.com', 'proton.me', 'gmx.com',
-    'yandex.com', 'zoho.com', 'tutanota.com', 'myyahoo.com'
+    'yandex.com', 'zoho.com', 'tutanota.com', 'myyahoo.com', 'live.com',
+    'msn.com', 'hotmail.co.uk', 'live.co.uk',
 }
 
 

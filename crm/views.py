@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.http import StreamingHttpResponse
 from leads.models import Lead, Company
-from leads.enrichment import enrich_company
+from leads.enrichment import enrich_company, enrich_lead
 import csv
 import io
 import os
@@ -10,6 +10,7 @@ import json
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
+from django.urls import reverse
 
 
 def home(request):
@@ -18,304 +19,95 @@ def home(request):
 
 
 def ai_enrichment(request):
-    """Vista para enriquecer empresas con IA"""
-    if request.method == 'POST':
-        # Check if AI enrichment is enabled
-        enable_enrichment = os.getenv("GENAI_API_KEY") and os.getenv("OPENAI_API_KEY")
-        
-        if not enable_enrichment:
-            messages.error(request, 'AI enrichment is disabled. Add GENAI_API_KEY and OPENAI_API_KEY to keys.env to enable.')
-            return redirect('crm:ai_enrichment')
-        
-        # Get all companies without enrichment
-        companies_to_enrich = Company.objects.filter(
-            work_website__isnull=True
-        ).exclude(
-            domain__in=['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com']
-        )
-        
-        total_to_enrich = companies_to_enrich.count()
-        
-        if total_to_enrich == 0:
-            messages.info(request, 'No companies need enrichment. All companies are already enriched!')
-            return redirect('companies:company_list')
-        
-        # Use streaming response to show progress in real-time
-        def enrich_generator():
-            yield '''<!DOCTYPE html>
-<html>
-<head>
-    <title>AI Enrichment Progress</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-            margin: 0;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .progress-bar {
-            width: 100%;
-            height: 35px;
-            background: #e9ecef;
-            border-radius: 17px;
-            overflow: hidden;
-            margin-bottom: 15px;
-            border: 1px solid #dee2e6;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .status-current {
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            font-weight: 600;
-            color: #856404;
-        }
-        .status {
-            padding: 10px 15px;
-            margin: 8px 0;
-            border-radius: 5px;
-            background: #f8f9fa;
-            border-left: 4px solid #667eea;
-            font-size: 14px;
-        }
-        .success {
-            border-left-color: #28a745;
-            background: #d4edda;
-            color: #155724;
-        }
-        .error {
-            border-left-color: #dc3545;
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .complete {
-            text-align: center;
-            margin-top: 30px;
-        }
-        .btn {
-            padding: 12px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            display: inline-block;
-            margin: 10px 5px;
-            font-weight: 600;
-        }
-        .btn:hover {
-            opacity: 0.9;
-            color: white;
-        }
-        .btn-secondary {
-            background: #6c757d;
-        }
-        .log-container {
-            max-height: 400px;
-            overflow-y: auto;
-            margin-top: 20px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 5px;
-        }
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            margin: 20px 0;
-        }
-        .stat-box {
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            flex: 1;
-            margin: 0 10px;
-        }
-        .stat-number {
-            font-size: 28px;
-            font-weight: bold;
-            color: #667eea;
-        }
-        .stat-label {
-            font-size: 12px;
-            color: #6c757d;
-            margin-top: 5px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🤖 AI Enrichment Progress</h1>
-        <div class="progress-bar">
-            <div class="progress-fill" id="progress" style="width: 0%">0/''' + str(total_to_enrich) + '''</div>
-        </div>
-        <div class="stats">
-            <div class="stat-box">
-                <div class="stat-number" id="total">''' + str(total_to_enrich) + '''</div>
-                <div class="stat-label">TOTAL</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number" id="enriched" style="color: #28a745;">0</div>
-                <div class="stat-label">ENRICHED</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number" id="errors" style="color: #dc3545;">0</div>
-                <div class="stat-label">ERRORS</div>
-            </div>
-        </div>
-        <div id="current-status"></div>
-        <div class="log-container" id="log">
-'''
-            
-            enriched_companies = 0
-            errors = 0
-            completed = 0
-            lock = threading.Lock()
-            
-            # Function to enrich a single company
-            def enrich_single_company(company):
-                try:
-                    enriched_data = enrich_company(company.domain, verbose=False)
-                    
-                    # Update company with enriched data
-                    if enriched_data.get('work_website'):
-                        company.work_website = enriched_data['work_website']
-                    if enriched_data.get('linkedin'):
-                        company.linkedin = enriched_data['linkedin']
-                    if enriched_data.get('company_name'):
-                        company.company_name = enriched_data['company_name']
-                    if enriched_data.get('industry'):
-                        company.industry = enriched_data['industry']
-                    if enriched_data.get('company_size'):
-                        company.company_size = enriched_data['company_size']
-                    if enriched_data.get('hq_country'):
-                        company.hq_country = enriched_data['hq_country']
-                    if enriched_data.get('org_type'):
-                        company.org_type = enriched_data['org_type']
-                    if enriched_data.get('tech_stack'):
-                        company.tech_stack = enriched_data['tech_stack']
-                    if enriched_data.get('street'):
-                        company.street = enriched_data['street']
-                    if enriched_data.get('city'):
-                        company.city = enriched_data['city']
-                    if enriched_data.get('state'):
-                        company.state = enriched_data['state']
-                    if enriched_data.get('postal_code'):
-                        company.postal_code = enriched_data['postal_code']
-                    if enriched_data.get('country'):
-                        company.country = enriched_data['country']
-                    if enriched_data.get('work_phone'):
-                        company.work_phone = enriched_data['work_phone']
-                    if enriched_data.get('facebook'):
-                        company.facebook = enriched_data['facebook']
-                    
-                    company.save()
-                    return {'success': True, 'company': company, 'name': company.company_name or company.domain}
-                except Exception as e:
-                    return {'success': False, 'company': company, 'error': str(e)}
-            
-            # Process companies in parallel with 5 workers
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                # Submit all tasks
-                future_to_company = {executor.submit(enrich_single_company, company): company for company in companies_to_enrich}
-                
-                # Process results as they complete
-                for future in as_completed(future_to_company):
-                    with lock:
-                        completed += 1
-                        progress_percent = int((completed / total_to_enrich) * 100)
-                    
-                    result = future.result()
-                    
-                    # Update progress bar
-                    yield f'''<script>
-                        document.getElementById('progress').style.width = '{progress_percent}%';
-                        document.getElementById('progress').textContent = '{completed}/{total_to_enrich}';
-                        document.getElementById('current-status').innerHTML = '<div class="status-current">⚙️ Processing {completed}/{total_to_enrich} companies in parallel (5 threads)</div>';
-                        window.scrollTo(0, document.body.scrollHeight);
-                    </script>'''
-                    
-                    if result['success']:
-                        with lock:
-                            enriched_companies += 1
-                        
-                        yield f'''<div class="status success">✅ [{completed}/{total_to_enrich}] Successfully enriched: {result['name']}</div>
-<script>
-    document.getElementById('enriched').textContent = '{enriched_companies}';
-    window.scrollTo(0, document.body.scrollHeight);
-</script>'''
-                    else:
-                        with lock:
-                            errors += 1
-                        
-                        error_msg = result['error'].replace("'", "\\'")
-                        yield f'''<div class="status error">❌ [{completed}/{total_to_enrich}] Error enriching {result['company'].domain}: {error_msg}</div>
-<script>
-    document.getElementById('errors').textContent = '{errors}';
-    window.scrollTo(0, document.body.scrollHeight);
-</script>'''
-            
-            # Final update
-            yield f'''<script>
-                document.getElementById('progress').style.width = '100%';
-                document.getElementById('progress').textContent = '{total_to_enrich}/{total_to_enrich}';
-                document.getElementById('current-status').innerHTML = '';
-            </script>'''
-            
-            yield f'''</div>
-        <div class="complete">
-            <h2>🎉 Enrichment Complete!</h2>
-            <p style="font-size: 18px; color: #333;">Successfully enriched <strong>{enriched_companies}</strong> out of <strong>{total_to_enrich}</strong> companies.</p>
-            {f'<p style="color: #dc3545; font-size: 16px;">{errors} errors occurred during enrichment.</p>' if errors > 0 else ''}
-            <a href="/companies/" class="btn">View Companies</a>
-            <a href="/" class="btn btn-secondary">Back to Home</a>
-        </div>
-    </div>
-</body>
-</html>'''
-        
-        return StreamingHttpResponse(enrich_generator(), content_type='text/html; charset=utf-8')
-    
-    # GET request - show enrichment page
+    """Simplified AI enrichment view for companies and leads."""
     enrichment_enabled = bool(os.getenv("GENAI_API_KEY") and os.getenv("OPENAI_API_KEY"))
-    
-    # Count companies that need enrichment
+
+    # Compute counts for UI
     companies_needing_enrichment = Company.objects.filter(
         work_website__isnull=True
     ).exclude(
         domain__in=['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com']
-    ).count()
-    
-    context = {
+    )
+    companies_count = companies_needing_enrichment.count()
+
+    leads_to_enrich_q = (
+        Lead.objects.filter(pdl_first_name__isnull=True)
+        | Lead.objects.filter(pdl_last_name__isnull=True)
+        | Lead.objects.filter(pdl_job_title__isnull=True)
+        | Lead.objects.filter(pdl_linkedin_url__isnull=True)
+    )
+    leads_to_enrich = leads_to_enrich_q.distinct()
+    leads_count = leads_to_enrich.count()
+
+    # Handle POST actions synchronously (keeps view simple and sync)
+    if request.method == 'POST':
+        if 'enrich_companies' in request.POST:
+            if not enrichment_enabled:
+                messages.error(request, 'AI enrichment is disabled. Add GENAI_API_KEY and OPENAI_API_KEY to keys.env to enable.')
+                return redirect('crm:ai_enrichment')
+
+            enriched = 0
+            errors = 0
+
+            # Enrich companies in parallel (5 workers)
+            def _enrich_one(company):
+                try:
+                    enriched_data = enrich_company(company.domain, verbose=False)
+                    if enriched_data:
+                        if enriched_data.get('work_website'):
+                            company.work_website = enriched_data['work_website']
+                        if enriched_data.get('company_name'):
+                            company.company_name = enriched_data['company_name']
+                        if enriched_data.get('linkedin'):
+                            company.linkedin = enriched_data['linkedin']
+                        company.save()
+                        return {'success': True, 'company': company}
+                    return {'success': False, 'company': company}
+                except Exception as e:
+                    return {'success': False, 'company': company, 'error': str(e)}
+
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                future_to_company = {executor.submit(_enrich_one, c): c for c in companies_needing_enrichment}
+                for future in as_completed(future_to_company):
+                    try:
+                        result = future.result()
+                        if result.get('success'):
+                            enriched += 1
+                        else:
+                            # treat missing data as not-enriched
+                            if result.get('error'):
+                                errors += 1
+                    except Exception:
+                        errors += 1
+
+            messages.success(request, f'AI-enriched {enriched} companies. {errors} errors.')
+            return redirect('crm:ai_enrichment')
+
+        if 'enrich_leads' in request.POST:
+            if not enrichment_enabled:
+                messages.error(request, 'AI enrichment is disabled. Add GENAI_API_KEY and OPENAI_API_KEY to keys.env to enable.')
+                return redirect('crm:ai_enrichment')
+
+            enriched = 0
+            errors = 0
+            for lead in leads_to_enrich:
+                try:
+                    result = enrich_lead(lead, verbose=False, overwrite=True)
+                    if result and not result.get('skipped'):
+                        enriched += 1
+                    elif result is None:
+                        errors += 1
+                except Exception:
+                    errors += 1
+
+            messages.success(request, f'AI-enriched {enriched} leads. {errors} errors.')
+            return redirect('crm:ai_enrichment')
+
+    return render(request, 'crm/ai_enrichment.html', {
         'enrichment_enabled': enrichment_enabled,
-        'companies_count': companies_needing_enrichment
-    }
-    
-    return render(request, 'crm/ai_enrichment.html', context)
+        'companies_count': companies_count,
+        'leads_count': leads_count,
+    })
 
 
 def enrichment_progress(request):
@@ -337,6 +129,84 @@ def enrichment_progress(request):
         progress['logs'] = progress['logs'][-20:]
     
     return JsonResponse(progress)
+
+
+def ai_enrichment_stream(request):
+    """Streaming endpoint that runs company enrichment in parallel and streams progress as HTML/JS.
+    Opens in a new browser window/tab so the main UI remains responsive.
+    """
+    enrichment_enabled = bool(os.getenv("GENAI_API_KEY") and os.getenv("OPENAI_API_KEY"))
+    if not enrichment_enabled:
+        return StreamingHttpResponse("<html><body><h3>AI enrichment is disabled.</h3></body></html>", content_type='text/html')
+
+    companies = list(Company.objects.filter(
+        work_website__isnull=True
+    ).exclude(domain__in=['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com']))
+
+    total = len(companies)
+
+    def stream():
+        yield "<!doctype html><html><head><meta charset='utf-8'><title>AI Enrichment Progress</title>"
+        yield "<style>body{font-family:Segoe UI,Arial;margin:16px} .progress{width:100%;height:22px;background:#eee;border-radius:4px;overflow:hidden} .bar{height:100%;background:#4caf50;width:0%}</style>"
+        yield "</head><body>"
+        yield f"<h2>AI Enrichment — {total} companies</h2>"
+        yield "<div class='progress'><div id='bar' class='bar'></div></div>"
+        yield "<div id='log' style='margin-top:12px;font-family:monospace;white-space:pre-wrap'></div>"
+
+        if total == 0:
+            yield "<script>document.getElementById('log').textContent = 'No companies to enrich.';</script>"
+            yield "</body></html>"
+            return
+
+        enriched = 0
+        errors = 0
+
+        def _enrich_one(company):
+            try:
+                enriched_data = enrich_company(company.domain, verbose=False)
+                if enriched_data:
+                    if enriched_data.get('work_website'):
+                        company.work_website = enriched_data['work_website']
+                    if enriched_data.get('company_name'):
+                        company.company_name = enriched_data['company_name']
+                    if enriched_data.get('linkedin'):
+                        company.linkedin = enriched_data['linkedin']
+                    company.save()
+                    return {'success': True, 'domain': company.domain, 'name': company.company_name}
+                return {'success': False, 'domain': company.domain}
+            except Exception as e:
+                return {'success': False, 'domain': company.domain, 'error': str(e)}
+
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_company = {executor.submit(_enrich_one, c): c for c in companies}
+            completed = 0
+            for future in as_completed(future_to_company):
+                completed += 1
+                try:
+                    res = future.result()
+                    if res.get('success'):
+                        enriched += 1
+                        msg = f"✅ Enriched {res.get('name') or res.get('domain')}"
+                    else:
+                        if res.get('error'):
+                            errors += 1
+                            msg = f"❌ Error {res.get('domain')}: {res.get('error')}"
+                        else:
+                            msg = f"⚠️ Skipped {res.get('domain')} (no data)"
+                except Exception as e:
+                    errors += 1
+                    msg = f"❌ Exception: {str(e)}"
+
+                percent = int((completed / total) * 100)
+                # send progress update and log line (use json.dumps to safely escape content)
+                safe_msg = json.dumps(msg + "\n")
+                yield f"<script>document.getElementById('bar').style.width='{percent}%'; document.getElementById('log').textContent += {safe_msg};</script>"
+
+        # final summary
+        yield f"<script>document.getElementById('log').textContent += '---\nCompleted: {enriched}/{total} enriched, {errors} errors.\n';</script>"
+        yield "</body></html>"
+
+    return StreamingHttpResponse(stream(), content_type='text/html; charset=utf-8')
 
 
 def import_csv(request):
@@ -374,6 +244,7 @@ def import_csv(request):
             created_companies = 0
             enriched_companies = 0
             created_leads = 0
+            enriched_leads = 0
             skipped_leads = 0
             errors = []
             
@@ -427,6 +298,15 @@ def import_csv(request):
                     
                     lead_name = f"{lead.pdl_first_name or ''} {lead.pdl_last_name or ''}".strip() or email
                     print(f"  [{row_num}/{total_rows}] ✅ Created lead: {lead_name}")
+
+                    if enable_enrichment:
+                        print(f"  [{row_num}/{total_rows}] 🤖 Enriching lead with AI...")
+                        enriched_data = enrich_lead(lead, verbose=True)
+                        if enriched_data:
+                            enriched_leads += 1
+                            print(f"  [{row_num}/{total_rows}] ✅ Lead enriched")
+                        else:
+                            print(f"  [{row_num}/{total_rows}] ⚠️  Lead enrichment skipped or failed")
                     
                 except Exception as e:
                     errors.append(f"Row {row_num}: {str(e)}")
@@ -510,6 +390,8 @@ def import_csv(request):
             success_msg = f'Import completed! Created {created_leads} leads and {created_companies} companies.'
             if enable_enrichment and enriched_companies > 0:
                 success_msg += f' AI-enriched {enriched_companies} companies.'
+            if enable_enrichment and enriched_leads > 0:
+                success_msg += f' AI-enriched {enriched_leads} leads.'
             success_msg += f' Skipped {skipped_leads} duplicates.'
             
             messages.success(request, success_msg)

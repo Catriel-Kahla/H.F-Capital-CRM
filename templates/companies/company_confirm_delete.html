@@ -2,87 +2,27 @@
 
 {% block title %}Delete Company - CRM{% endblock %}
 
-{% block extra_css %}
-<style>
-    .delete-container {
-        max-width: 600px;
-        margin: 0 auto;
-        text-align: center;
-    }
-    
-    .warning-box {
-        background: #fff3cd;
-        border: 2px solid #ffc107;
-        padding: 30px;
-        border-radius: 10px;
-        margin-bottom: 30px;
-    }
-    
-    .warning-icon {
-        font-size: 64px;
-        margin-bottom: 20px;
-    }
-    
-    h1 {
-        color: #333;
-        margin-bottom: 20px;
-    }
-    
-    .company-info {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 5px;
-        margin: 20px 0;
-    }
-    
-    .btn {
-        display: inline-block;
-        padding: 10px 20px;
-        color: white;
-        text-decoration: none;
-        border-radius: 5px;
-        border: none;
-        cursor: pointer;
-        transition: transform 0.2s;
-        margin: 0 10px;
-    }
-    
-    .btn:hover {
-        transform: translateY(-2px);
-    }
-    
-    .btn-danger {
-        background: #dc3545;
-    }
-    
-    .btn-secondary {
-        background: #6c757d;
-    }
-</style>
-{% endblock %}
+{% block extra_css %}{% endblock %}
 
 {% block content %}
-<div class="delete-container">
-    <div class="warning-box">
-        <div class="warning-icon">⚠️</div>
-        <h1>Confirm Deletion</h1>
-        <p>Are you sure you want to delete this company?</p>
-        
-        <div class="company-info">
-            <strong>{{ company.company_name|default:company.domain }}</strong><br>
-            <small>Domain: {{ company.domain }}</small><br>
-            <small>Associated Leads: {{ company.lead_set.count }}</small>
-        </div>
-        
-        <p style="color: #856404; font-weight: bold;">
-            This action cannot be undone!
-        </p>
+<div class="ui segment">
+    <div class="ui negative message">
+        <div class="header">Delete company?</div>
+        <p>This action cannot be undone.</p>
     </div>
-    
+
+    <table class="ui definition table">
+        <tbody>
+            <tr><td>Company</td><td>{{ company.company_name|default:company.domain }}</td></tr>
+            <tr><td>Domain</td><td>{{ company.domain }}</td></tr>
+            <tr><td>Associated Leads</td><td>{{ company.lead_set.count }}</td></tr>
+        </tbody>
+    </table>
+
     <form method="post">
         {% csrf_token %}
-        <button type="submit" class="btn btn-danger">Yes, Delete Company</button>
-        <a href="{% url 'companies:company_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="ui red button">Delete Company</button>
+        <a href="{% url 'companies:company_list' %}" class="ui button">Cancel</a>
     </form>
 </div>
 {% endblock %}

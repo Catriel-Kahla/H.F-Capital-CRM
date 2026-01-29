@@ -4,80 +4,22 @@
 
 {% block extra_css %}
 <style>
-    .form-container {
-        max-width: 800px;
-        margin: 0 auto;
-    }
-    
-    h1 {
-        color: #333;
-        margin-bottom: 30px;
-    }
-    
-    .form-group {
-        margin-bottom: 20px;
-    }
-    
-    label {
-        display: block;
-        margin-bottom: 5px;
-        color: #333;
-        font-weight: 600;
-    }
-    
-    input[type="text"],
-    input[type="email"],
-    input[type="url"],
-    input[type="number"],
-    select,
-    textarea {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        font-size: 14px;
-    }
-    
-    textarea {
-        resize: vertical;
-        min-height: 100px;
-    }
-    
-    .btn {
-        display: inline-block;
-        padding: 10px 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        text-decoration: none;
-        border-radius: 5px;
-        border: none;
-        cursor: pointer;
-        transition: transform 0.2s;
-        margin-right: 10px;
-    }
-    
-    .btn:hover {
-        transform: translateY(-2px);
-    }
-    
-    .btn-secondary {
-        background: #6c757d;
+    .ui.form p {
+        margin-bottom: 1em;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="form-container">
-    <h1>{{ title }}</h1>
-    
-    <form method="post">
+<div class="ui segment">
+    <h2 class="ui header">{{ title }}</h2>
+    <form method="post" class="ui form">
         {% csrf_token %}
         {{ form.as_p }}
-        
-        <div style="margin-top: 30px;">
-            <button type="submit" class="btn">Save Company</button>
-            <a href="{% url 'companies:company_list' %}" class="btn btn-secondary">Cancel</a>
-        </div>
+
+        <div class="ui divider"></div>
+        <button type="submit" class="ui primary button">Save Company</button>
+        <a href="{% url 'companies:company_list' %}" class="ui button">Cancel</a>
     </form>
 </div>
 {% endblock %}

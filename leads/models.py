@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from .scoring import auto_calculate_score_and_stage
 
 
 class Company(models.Model):
@@ -154,4 +155,10 @@ class Lead(models.Model):
 
     def __repr__(self):
         return f"<Lead(email={self.email!r}, domain={self.company_id!r}, lead_score={self.lead_score})>"
+
+    def save(self, *args, **kwargs):
+        """Override save to automatically calculate score and stage."""
+        # Auto-calculate lead score and stage based on lead data
+        auto_calculate_score_and_stage(self)
+        super().save(*args, **kwargs)
 

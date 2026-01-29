@@ -4,9 +4,95 @@
 
 Version | Date       | Author         | Description
 ------------------------------------------------------------
+0.2.0   | 2026-01-28 | Catriel Kahla  | Non-stable release
 0.1.0   | 2026-01-19 | Catriel Kahla  | Initial non-stable release
 
 ---
+
+## Version 0.2.0 – Non-stable
+
+### Overview
+This release adds search, improves CSV import flow, enables AI lead enrichment during CSV uploads, and implements automated lead scoring with multi-signal intelligence.
+
+### Features
+
+#### **4. UI/UX Improvements & Codebase Cleanup**
+- Home page: Removed Reports card and AI Enrichment button, added AI Enrichment card
+- Leads list: Improved button alignment and sizing, removed enrichment buttons from lists
+- Alerts: Now auto-hide after a few seconds for better UX
+- "Recalculate Score" button restricted to leads only (not companies)
+- Company detail view: Fixed rendering errors
+- .gitignore: Added TEMP FILES/ and removed obsolete files
+- Deleted demo, test, and unused scripts and documentation
+
+#### **1. Lead Search & Filtering**
+- Company search in /companies (filters by company name and domain)
+- Lead search in /leads (filters by first name, last name, email, company name, and company domain)
+- Clean search UI with clear button to reset filters
+- Filter leads by score, stage, and other criteria
+
+#### **2. AI Lead Enrichment**
+- AI lead enrichment during CSV upload (DuckDuckGo + Gemini/OpenAI)
+- Real-time progress tracking
+- Support for job title, first/last name, and LinkedIn URL extraction
+
+#### **3. Automated Lead Scoring System** ⭐ NEW
+**Sophisticated multi-signal lead scoring algorithm** based on enterprise intelligence signals:
+
+**Scoring Signals (0-100 scale):**
+- **Session Count** (0-50 pts): 1 point per user engagement session
+- **Product Adoption** (+25 pts): 6+ months of usage bonus
+- **Team Adoption** (+30 pts): 2+ users from same enterprise domain ⭐ CORE
+- **Job Title** (5-20 pts): CISO/CTO (20), VP/Director (15), Manager (10), Senior (8), IC (5)
+- **Enterprise Domain** (+30 pts): Corporate domain vs. free email
+- **Gmail Qualified** (+5 pts): Quality Gmail users with positive signals
+- **Free Email Penalty** (-10 pts): Reduces score for personal emails
+
+**Automatic Lead Stages (based on score):**
+- 0-19: Low Priority
+- 20-39: Medium Priority  
+- 40-59: High Priority
+- 60-79: Very High Priority
+- 80-100: Enterprise Target
+
+**Features:**
+- ✅ Scores calculated automatically on every lead save
+- ✅ Stages auto-updated based on score
+- ✅ Read-only display in forms (no manual override)
+- ✅ Management command: `python manage.py recalculate_scores`
+- ✅ Admin list filtering and sorting by score/stage
+- ✅ Team adoption signal detects multi-user companies
+
+**Management Command Usage:**
+```bash
+# Recalculate all leads
+python manage.py recalculate_scores
+
+# Filter by stage
+python manage.py recalculate_scores --stage very_high
+
+# Specific email
+python manage.py recalculate_scores --email user@example.com
+
+# Limit records
+python manage.py recalculate_scores --limit 100
+```
+
+### Fixed bugs
+- **CSV Import Button**: Fixed "📥 Import CSV" button not being clickable (added cursor: pointer CSS)
+- **New Lead Button**: Fixed "New Lead" button error by correcting URL reference from `leads:company_create` to `companies:company_create`
+- **Gemini AI Model**: Updated from deprecated `gemini-2.0-flash-exp` to current stable `gemini-2.5-flash`, resolving 404 errors during AI enrichment
+- **Cancel Button**: Fixed incorrect URL in CSV import cancel button from `leads:home` to `crm:home`
+- **Search UX**: Removed intrusive search result alert messages for cleaner user experience
+- **Clickable Links**: Added cursor: pointer to all clickable buttons and feature cards for better visual feedback
+- Lead score and stage now non-editable (auto-calculated only)
+- **Company Detail View**: Fixed errors when viewing company details
+- **Button Alignment**: Fixed action button layout in leads list
+- **Enrichment Buttons**: Removed from leads and companies lists
+- **Alert Auto-hide**: Alerts now disappear automatically
+- **Obsolete Files**: Removed demo, test, and unused files
+
+------------------------------------------------------------
 
 ## Version 0.1.0 – Non-stable
 
@@ -86,7 +172,23 @@ Advanced company enrichment system using multiple AI providers:
   - **Multi-threaded Processing**: Concurrent enrichment with progress tracking and error handling
   - **Real-time Progress Dashboard**: Streaming HTTP response showing live enrichment status
 
-#### **3. CSV Import System** 
+#### **3. Automated Lead Scoring System** ⭐ NEW
+Multi-signal lead scoring algorithm ([leads/scoring.py](leads/scoring.py)):
+- **`calculate_lead_score()`** - Comprehensive scoring function using 7 signals:
+  - Session count (engagement metric)
+  - Product adoption months bonus
+  - Team adoption detection (2+ users per enterprise domain)
+  - Job title hierarchy recognition (CISO/CTO through Individual Contributor)
+  - Enterprise domain detection (vs. free email)
+  - Gmail qualified adjustment
+  - Free email penalty
+- **`auto_calculate_score_and_stage()`** - Automatic calculation on Lead.save()
+- **Automatic stage mapping** - Maps score to pipeline stage (Low → Enterprise Target)
+- **Team adoption signal** - Enterprise intelligence: identifies companies with multi-user adoption
+- **Management command** - `python manage.py recalculate_scores` for bulk operations
+- All scoring **read-only in UI** - No manual override possible
+
+#### **4. CSV Import System** 
 Bulk data import with validation ([crm/views.py](crm/views.py)):
 - **`import_csv()`** - Upload CSV files containing lead and company data
   - Validates CSV format and required fields (email, domain)
@@ -170,7 +272,6 @@ Responsive HTML templates with Bootstrap styling:
 
 #### **Functional Issues**
 - **Lead Editing Not Working** - `lead_update()` function exists but may have form validation issues
-- **Average Score Calculation** - Lead scoring aggregation functionality not implemented
 - **Database Clear Operation** - Currently clears entire database instead of selective deletion
 
 #### **Code Quality Issues**
@@ -179,7 +280,7 @@ Responsive HTML templates with Bootstrap styling:
 
 #### **Missing Features**
 - Lead editing interface needs debugging
-- Analytics dashboard for lead scoring
+- Analytics dashboard for lead scoring trends
 - Selective database management (clear by filters)
 - People Data Labs API integration (fields prepared but not connected)
 - User authentication and permissions system

@@ -7,6 +7,7 @@ import time
 import json
 import re
 import os
+from django.utils import timezone
 from ddgs import DDGS
 import google.generativeai as genai
 from openai import OpenAI
@@ -97,7 +98,7 @@ Respond with ONLY the URL, nothing else. No explanations, no additional text.
 If none match, respond with the first URL from the list.
 """
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         text = response.text.strip()
         
@@ -202,7 +203,7 @@ Return ONLY a JSON object with this exact structure (use null for unknown fields
 Return ONLY the JSON, no additional text."""
 
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         response_text = response.text.strip()
         
@@ -255,6 +256,269 @@ def merge_and_verify_data(gpt_data: dict, gemini_data: dict, domain: str, websit
             merged[key] = gpt_val
     
     return merged
+
+
+def search_person_with_ddgs(email: str, max_results: int = 6):
+    """Search for person information using DuckDuckGo."""
+    local_part = email.split('@')[0]
+
+    queries = [
+        f"{email}",
+        f"{email} LinkedIn",
+        f"{local_part} LinkedIn profile",
+        f'"{email}" professional profile',
+    ]
+
+    results = []
+    ddgs_delay = float(os.getenv("LEAD_ENRICH_DDGS_DELAY", "0.1"))
+    try:
+        with DDGS() as ddgs:
+            for query in queries:
+                try:
+                    for r in ddgs.text(query, max_results=max_results):
+                        href = r.get("href") or r.get("link")
+                        title = r.get("title", "")
+                        snippet = r.get("body", "")
+                        if href:
+                            results.append({
+                                "title": title,
+                                "url": href,
+                                "snippet": snippet,
+                                "query": query,
+                            })
+                    time.sleep(ddgs_delay)
+                except Exception as e:
+                    print(f"Search error for '{query}': {e}")
+                    continue
+    except Exception as e:
+        print(f"DDGS error: {e}")
+        return []
+
+    seen = set()
+    dedup = []
+    for item in results:
+        u = item["url"]
+        if u not in seen:
+            seen.add(u)
+            dedup.append(item)
+
+    return dedup
+
+
+def extract_linkedin_url(results: list) -> str:
+    """Extract LinkedIn profile URL from search results."""
+    for result in results:
+        url = result.get("url", "")
+        if "linkedin.com/in/" in url:
+            if "?" in url:
+                url = url.split("?")[0]
+            return url
+    return None
+
+
+def get_lead_info_with_gpt(email: str, search_results: list, linkedin_url: str = None):
+    """Use ChatGPT to extract lead information from search results."""
+    if not gpt_client or not search_results:
+        return None
+
+    context = ""
+    for i, result in enumerate(search_results[:10], 1):
+        context += f"\n{i}. Title: {result.get('title', '')}\n"
+        context += f"   URL: {result.get('url', '')}\n"
+        context += f"   Snippet: {result.get('snippet', '')}\n"
+
+    prompt = f"""Analyze the following search results about a professional with email: {email}
+
+LinkedIn URL (if found): {linkedin_url or 'Unknown'}
+
+Search Results:
+{context}
+
+Extract and return ONLY a JSON object with this exact structure:
+{{
+    "first_name": "extracted first name or null",
+    "last_name": "extracted last name or null",
+    "job_title": "current job title or null",
+    "linkedin_url": "LinkedIn profile URL or null (must be linkedin.com/in/...)"
+}}
+
+Instructions:
+- Extract all available data from titles/snippets/URLs
+- If a LinkedIn URL is present, prefer it
+- If names are in LinkedIn URL (john-smith), infer proper case
+- Return ONLY valid JSON
+"""
+
+    try:
+        response = gpt_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert data extraction assistant. Always respond with JSON only.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.3,
+        )
+        response_text = response.choices[0].message.content.strip()
+
+        if response_text.startswith("```"):
+            lines = response_text.split("\n")
+            response_text = "\n".join(lines[1:-1]) if len(lines) > 2 else response_text
+            if response_text.startswith("json"):
+                response_text = response_text[4:].strip()
+
+        return json.loads(response_text)
+    except Exception as e:
+        print(f"GPT error: {e}")
+        return None
+
+
+def get_lead_info_with_gemini(email: str, search_results: list, linkedin_url: str = None):
+    """Use Gemini to extract lead information from search results."""
+    if not GENAI_API_KEY or not search_results:
+        return None
+
+    context = ""
+    for i, result in enumerate(search_results[:10], 1):
+        context += f"\n{i}. Title: {result.get('title', '')}\n"
+        context += f"   URL: {result.get('url', '')}\n"
+        context += f"   Snippet: {result.get('snippet', '')}\n"
+
+    prompt = f"""Analyze the following search results about a professional with email: {email}
+
+LinkedIn URL (if found): {linkedin_url or 'Unknown'}
+
+Search Results:
+{context}
+
+Extract and return ONLY a JSON object with this exact structure:
+{{
+    "first_name": "extracted first name or null",
+    "last_name": "extracted last name or null",
+    "job_title": "current job title or null",
+    "linkedin_url": "LinkedIn profile URL or null (must be linkedin.com/in/...)"
+}}
+
+Return ONLY the JSON, no additional text.
+"""
+
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content(prompt)
+        response_text = response.text.strip()
+
+        if response_text.startswith("```"):
+            lines = response_text.split("\n")
+            response_text = "\n".join(lines[1:-1]) if len(lines) > 2 else response_text
+            if response_text.startswith("json"):
+                response_text = response_text[4:].strip()
+
+        return json.loads(response_text)
+    except Exception as e:
+        print(f"Gemini error: {e}")
+        return None
+
+
+def merge_lead_data(gpt_data: dict, gemini_data: dict, linkedin_url: str = None):
+    """Merge lead data from GPT and Gemini, preferring agreed values."""
+    if not gpt_data and not gemini_data:
+        return None
+    if not gpt_data:
+        return gemini_data
+    if not gemini_data:
+        return gpt_data
+
+    merged = {}
+    for key in gpt_data.keys():
+        gpt_val = gpt_data.get(key)
+        gemini_val = gemini_data.get(key)
+
+        if gpt_val == gemini_val:
+            merged[key] = gpt_val
+        elif gpt_val and not gemini_val:
+            merged[key] = gpt_val
+        elif gemini_val and not gpt_val:
+            merged[key] = gemini_val
+        else:
+            merged[key] = gpt_val
+
+    if linkedin_url and not merged.get("linkedin_url"):
+        merged["linkedin_url"] = linkedin_url
+
+    return merged
+
+
+def enrich_lead(lead, verbose=False, overwrite=False):
+    """Enrich a Lead using DuckDuckGo + Gemini/OpenAI."""
+    email = lead.email
+
+    if verbose:
+        print(f"🔍 Enriching lead: {email}")
+
+    if not overwrite:
+        has_all = all([
+            lead.pdl_first_name,
+            lead.pdl_last_name,
+            lead.pdl_job_title,
+            lead.pdl_linkedin_url,
+        ])
+        if has_all:
+            if verbose:
+                print("  ⏭️  Skipped (already enriched)")
+            return {"skipped": True}
+
+    try:
+        search_results = search_person_with_ddgs(email)
+        if not search_results:
+            return None
+
+        linkedin_url = extract_linkedin_url(search_results)
+        if verbose and linkedin_url:
+            print(f"  🔗 LinkedIn: {linkedin_url}")
+
+        fast_mode = os.getenv("LEAD_ENRICH_FAST", "0") == "1"
+
+        if fast_mode:
+            gemini_data = get_lead_info_with_gemini(email, search_results, linkedin_url)
+            ai_data = gemini_data or None
+            if ai_data and linkedin_url and not ai_data.get("linkedin_url"):
+                ai_data["linkedin_url"] = linkedin_url
+        else:
+            gpt_data = get_lead_info_with_gpt(email, search_results, linkedin_url)
+            gemini_data = get_lead_info_with_gemini(email, search_results, linkedin_url)
+            ai_data = merge_lead_data(gpt_data, gemini_data, linkedin_url)
+
+        if not ai_data:
+            return None
+
+        updated = False
+
+        if ai_data.get("first_name") and (overwrite or not lead.pdl_first_name):
+            lead.pdl_first_name = ai_data["first_name"]
+            updated = True
+        if ai_data.get("last_name") and (overwrite or not lead.pdl_last_name):
+            lead.pdl_last_name = ai_data["last_name"]
+            updated = True
+        if ai_data.get("job_title") and (overwrite or not lead.pdl_job_title):
+            lead.pdl_job_title = ai_data["job_title"]
+            updated = True
+        if ai_data.get("linkedin_url") and (overwrite or not lead.pdl_linkedin_url):
+            lead.pdl_linkedin_url = ai_data["linkedin_url"]
+            updated = True
+
+        if updated:
+            lead.pdl_job_last_verified = timezone.now()
+            lead.save()
+
+        post_delay = float(os.getenv("LEAD_ENRICH_POST_DELAY", "0.2"))
+        time.sleep(post_delay)
+        return ai_data
+    except Exception as e:
+        if verbose:
+            print(f"  ❌ Lead enrichment error: {e}")
+        return None
 
 
 def enrich_company(domain: str, verbose=False):

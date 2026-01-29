@@ -4,234 +4,101 @@
 
 {% block extra_css %}
 <style>
-    .import-container {
-        max-width: 800px;
-        margin: 0 auto;
-    }
-    
-    .import-header {
-        text-align: center;
-        margin-bottom: 40px;
-    }
-    
-    .import-header h1 {
-        font-size: 32px;
-        color: #333;
-        margin-bottom: 10px;
-    }
-    
-    .import-header p {
-        color: #666;
-        font-size: 16px;
-    }
-    
     .upload-area {
         background: #f8f9fa;
-        border: 3px dashed #667eea;
-        border-radius: 10px;
-        padding: 60px 40px;
+        border: 3px dashed #2bc797;
+        border-radius: 12px;
+        padding: 50px 30px;
         text-align: center;
         transition: all 0.3s;
         cursor: pointer;
     }
-    
+
     .upload-area:hover {
-        border-color: #764ba2;
-        background: #f0f0ff;
+        background: #f0fffb;
     }
-    
+
     .upload-area.dragover {
-        background: #e6e6ff;
-        border-color: #764ba2;
+        background: #e8fff7;
     }
-    
-    .upload-icon {
-        font-size: 64px;
-        margin-bottom: 20px;
-    }
-    
-    .upload-text h3 {
-        font-size: 24px;
-        color: #333;
-        margin-bottom: 10px;
-    }
-    
-    .upload-text p {
-        color: #666;
-        margin-bottom: 20px;
-    }
-    
+
     #file-input {
         display: none;
     }
-    
-    .btn {
-        padding: 12px 24px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.3s;
-        text-decoration: none;
-        display: inline-block;
-    }
-    
-    .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-    
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-    
-    .btn-secondary {
-        background: #6c757d;
-        color: white;
-        margin-left: 10px;
-    }
-    
+
     .file-info {
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 20px;
-        margin-top: 20px;
         display: none;
     }
-    
+
     .file-info.active {
         display: block;
-    }
-    
-    .file-name {
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 10px;
-    }
-    
-    .file-size {
-        color: #666;
-        font-size: 14px;
-    }
-    
-    .instructions {
-        background: white;
-        border-left: 4px solid #667eea;
-        padding: 20px;
-        margin-top: 40px;
-        border-radius: 5px;
-    }
-    
-    .instructions h3 {
-        color: #333;
-        margin-bottom: 15px;
-    }
-    
-    .instructions ul {
-        color: #666;
-        line-height: 1.8;
-    }
-    
-    .instructions code {
-        background: #f4f4f4;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-family: monospace;
-    }
-    
-    .alert {
-        padding: 12px 20px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-    }
-    
-    .alert-success {
-        background: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-    }
-    
-    .alert-error {
-        background: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
-    }
-    
-    .form-actions {
-        margin-top: 30px;
-        text-align: center;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="import-container">
-    {% if messages %}
-    <div class="messages">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
-            {{ message }}
-        </div>
-        {% endfor %}
+{% if messages %}
+<div class="ui messages">
+    {% for message in messages %}
+    <div class="ui {{ message.tags }} message">
+        {{ message }}
     </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="ui segment">
+    <h2 class="ui header">Import Leads from CSV</h2>
+    <p>Upload a CSV file to import leads and companies into the system.</p>
+    {% if enrichment_enabled %}
+    <div class="ui green message">🤖 Dual AI Enrichment Enabled - ChatGPT + Gemini working together</div>
+    {% else %}
+    <div class="ui yellow message">⚠️ AI Enrichment Disabled - Add both API keys to keys.env to enable</div>
     {% endif %}
 
-    <div class="import-header">
-        <h1>📥 Import Leads from CSV</h1>
-        <p>Upload a CSV file to import leads and companies into the system</p>
-        {% if enrichment_enabled %}
-        <p style="color: #28a745; font-weight: 600;">🤖 Dual AI Enrichment Enabled - ChatGPT + Gemini working together</p>
-        {% else %}
-        <p style="color: #ffc107; font-weight: 600;">⚠️ AI Enrichment Disabled - Add both API keys to keys.env to enable</p>
-        {% endif %}
-    </div>
-    
-    <form method="post" enctype="multipart/form-data" id="upload-form">
+    <form method="post" enctype="multipart/form-data" id="upload-form" class="ui form">
         {% csrf_token %}
-        
+
         <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
-            <div class="upload-icon">📄</div>
-            <div class="upload-text">
-                <h3>Click to upload or drag and drop</h3>
-                <p>CSV files only (max 10MB)</p>
+            <div class="ui icon header">
+                <i class="file alternate outline icon"></i>
+                Click to upload or drag and drop
             </div>
+            <p>CSV files only (max 10MB)</p>
             <input type="file" name="csv_file" id="file-input" accept=".csv" required>
         </div>
-        
-        <div class="file-info" id="file-info">
-            <div class="file-name" id="file-name"></div>
-            <div class="file-size" id="file-size"></div>
+
+        <div class="ui segment file-info" id="file-info">
+            <div class="header" id="file-name"></div>
+            <div class="meta" id="file-size"></div>
         </div>
-        
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">🚀 Import Data</button>
-            <a href="{% url 'leads:home' %}" class="btn btn-secondary">Cancel</a>
-        </div>
+
+        <button type="submit" class="ui primary button">Import Data</button>
+        <a href="{% url 'crm:home' %}" class="ui button">Cancel</a>
     </form>
-    
-    <div class="instructions">
-        <h3>📋 CSV Format Instructions</h3>
-        <ul>
-            <li>Your CSV file must include an <code>email</code> column</li>
-            <li>Optional columns: <code>first_name</code>, <code>last_name</code>, <code>job_title</code>, <code>company_name</code>, <code>domain</code></li>
-            <li>The system will automatically extract domains from email addresses</li>
-            <li>Companies will be created automatically if they don't exist</li>
-            <li>Duplicate emails will be skipped</li>
-            {% if enrichment_enabled %}
-            <li><strong>🤖 Dual AI Enrichment Active:</strong> Each company will be enriched and cross-validated with:
-                <ul style="margin-top: 10px;">
-                    <li>Website URL (via DuckDuckGo + Gemini AI)</li>
-                    <li>LinkedIn page (via DuckDuckGo + Gemini AI)</li>
-                    <li>Company details extracted by ChatGPT-4o-mini</li>
-                    <li>Company details extracted by Gemini 2.0 Flash</li>
-                    <li>Cross-validation & verification between both AI models</li>
-                    <li>Final data: industry, size, location, tech stack, contact info</li>
-                </ul>
-            </li>
-            {% endif %}
-        </ul>
+</div>
+
+<div class="ui segment">
+    <h3 class="ui header">CSV Format Instructions</h3>
+    <div class="ui list">
+        <div class="item">Your CSV file must include an <code>email</code> column</div>
+        <div class="item">Optional columns: <code>first_name</code>, <code>last_name</code>, <code>job_title</code>, <code>company_name</code>, <code>domain</code></div>
+        <div class="item">The system will automatically extract domains from email addresses</div>
+        <div class="item">Companies will be created automatically if they don't exist</div>
+        <div class="item">Duplicate emails will be skipped</div>
+        {% if enrichment_enabled %}
+        <div class="item">
+            <strong>🤖 Dual AI Enrichment Active:</strong>
+            <div class="ui list">
+                <div class="item">Website URL (via DuckDuckGo + Gemini AI)</div>
+                <div class="item">LinkedIn page (via DuckDuckGo + Gemini AI)</div>
+                <div class="item">Company details extracted by ChatGPT-4o-mini</div>
+                <div class="item">Company details extracted by Gemini 2.0 Flash</div>
+                <div class="item">Cross-validation & verification between both AI models</div>
+                <div class="item">Final data: industry, size, location, tech stack, contact info</div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 

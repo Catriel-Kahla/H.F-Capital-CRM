@@ -8,6 +8,27 @@
         <div class="item">
             <i class="calendar icon"></i>
             <div class="content">
+                <div class="header">2026-02-16</div>
+                <div class="description">
+                    <b>UI refresh, companies list improvements, dependencies</b><br>
+                    <ul>
+                        <li>Flat design with light blue accent (<code>--light-blue</code> CSS var); vanilla Fomantic, box-shadow override.</li>
+                        <li>Companies and leads: flat layout, no segments, <code>ui table</code>, basic buttons.</li>
+                        <li>Company name and lead email/name link to detail with "Show details" tooltip; removed View icon from action buttons.</li>
+                        <li>Leads: striped table, Active status = green basic label; Mailchimp/tag actions in segments with icons.</li>
+                        <li>Brand logo in static assets.</li>
+                        <li>LinkedIn icon: Fomantic <code>grey</code> class for muted appearance.</li>
+                        <li>Leads column: fixed reverse relation (<code>lead_set</code> → <code>leads</code>); clickable "X leads" link navigates to filtered leads list.</li>
+                        <li>Lead list: <code>?company=domain</code> filter; "Leads for [Company]" subheader with "Show all" link; search preserves filter.</li>
+                        <li><code>requirements.txt</code>: updated dependencies and compatibility.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="item">
+            <i class="calendar icon"></i>
+            <div class="content">
                 <div class="header">2026-02-10</div>
                 <div class="description">
                     <b>Version 0.3.0 - Non-stable</b><br>

@@ -1,170 +1,49 @@
 {% extends 'base.html' %}
 
-{% block title %}Home - CRM Django{% endblock %}
+{% block title %}Home - CRM{% endblock %}
 
-{% block extra_css %}
-<style>
-    .hero-segment {
-        padding: 50px 40px;
-        border-radius: 18px;
-        background: radial-gradient(120% 120% at 0% 0%, #eef2ff 0%, #ffffff 55%, #f8fafc 100%);
-        border: 1px solid rgba(102, 126, 234, 0.15);
-        box-shadow: 0 20px 50px rgba(31, 38, 135, 0.12);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .hero-segment::after {
-        content: '';
-        position: absolute;
-        width: 320px;
-        height: 320px;
-        right: -120px;
-        top: -120px;
-        background: radial-gradient(circle, rgba(102, 126, 234, 0.25) 0%, rgba(102, 126, 234, 0) 70%);
-        pointer-events: none;
-    }
-
-    .hero-title {
-        font-size: 40px;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-        color: #1f2937;
-        margin-bottom: 12px;
-    }
-
-    .hero-subtitle {
-        font-size: 17px;
-        color: #6b7280;
-        max-width: 560px;
-    }
-
-    .feature-card {
-        border-radius: 16px !important;
-        overflow: hidden;
-        border: 1px solid rgba(99, 102, 241, 0.12) !important;
-        box-shadow: 0 12px 28px rgba(17, 24, 39, 0.08) !important;
-        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
-    }
-
-    .feature-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 18px 40px rgba(17, 24, 39, 0.12) !important;
-    }
-
-    .feature-card .content {
-        padding: 22px !important;
-    }
-
-    .feature-card .content .header {
-        font-size: 16px;
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .feature-card .description {
-        color: #6b7280 !important;
-    }
-
-    .feature-card .extra.content {
-        background: #f9fafb;
-        color: #4b5563 !important;
-    }
-
-    body {
-        background: #bcbcbc;
-    }
-
-    header {
-        background: #ffffff;
-        backdrop-filter: none;
-        margin-bottom: 0;
-        border-radius: 0;
-        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
-        position: sticky;
-        top: 0;
-        left: 0;
-        right: 0;
-        width: 100%;
-        z-index: 1000;
-    }
-
-    nav a {
-        color: #1f2937;
-    }
-
-    nav a:hover {
-        background: rgba(15, 23, 42, 0.08);
-        color: #111827;
-    }
-
-    .logo {
-        color: #111827;
-    }
-
-    main {
-        background: transparent;
-        padding: 30px 0 10px 0;
-        border-radius: 0;
-        box-shadow: none;
-    }
-</style>
-{% endblock %}
+{% block extra_css %}{% endblock %}
 
 {% block content %}
-<div class="ui stackable grid">
-    <div class="sixteen wide column">
-        <div class="ui segment hero-segment">
-            <div class="ui grid stackable middle aligned">
-                <div class="ten wide column">
-                    <div class="hero-title">Welcome to our CRM</div>
-                    <div class="hero-subtitle">Manage your leads, companies, and enrichment workflows from a single dashboard.</div>
-                </div>
-                <div class="six wide column right aligned">
-                    <a href="{% url 'crm:import_csv' %}" class="ui large green button">
-                        <i class="upload icon"></i> Import CSV
-                    </a>
-                </div>
-            </div>
-        </div>
+<div class="ui stackable relaxed grid">
+    <div class="twelve wide column">
+        <h2 class="ui huge header">Home</h2>
+        <p class="ui large sub header">Manage your leads, companies, and enrichment workflows from a single dashboard.</p>
+    </div>
+    <div class="four wide column right aligned">
+        <a href="{% url 'crm:import_csv' %}" class="ui basic button"><i class="upload icon"></i> Import CSV</a>
     </div>
 </div>
 
-<div class="ui stackable grid">
-    <div class="four wide column">
-        <a href="{% url 'leads:lead_list' %}" class="ui fluid card feature-card">
-            <div class="content">
-                <div class="header"><i class="users icon"></i> Lead Management</div>
-                <div class="description">Organize and track your prospects effectively.</div>
-            </div>
-            <div class="extra content">View leads</div>
-        </a>
-    </div>
-    <div class="four wide column">
-        <a href="{% url 'companies:company_list' %}" class="ui fluid card feature-card">
-            <div class="content">
-                <div class="header"><i class="building icon"></i> Company Management</div>
-                <div class="description">Keep company data consistent and enriched.</div>
-            </div>
-            <div class="extra content">View companies</div>
-        </a>
-    </div>
-    <div class="four wide column">
-        <a href="{% url 'crm:ai_enrichment' %}" class="ui fluid card feature-card">
-            <div class="content">
-                <div class="header"><i class="robot icon"></i> AI Enrichment</div>
-                <div class="description">Enrich your leads and companies with AI-powered data.</div>
-            </div>
-            <div class="extra content">Go to AI Enrichment</div>
-        </a>
-    </div>
-    <div class="four wide column">
-        <div class="ui fluid card feature-card">
-            <div class="content">
-                <div class="header"><i class="bell icon"></i> Notifications</div>
-                <div class="description">Stay on top of important activities.</div>
-            </div>
-            <div class="extra content">Coming soon</div>
+<div class="ui hidden divider"></div>
+
+<div class="ui large relaxed divided list">
+    <a class="item" href="{% url 'leads:lead_list' %}">
+        <i class="users icon"></i>
+        <div class="content">
+            <div class="header">Lead Management</div>
+            <div class="description">Organize and track your prospects effectively.</div>
+        </div>
+    </a>
+    <a class="item" href="{% url 'companies:company_list' %}">
+        <i class="building icon"></i>
+        <div class="content">
+            <div class="header">Company Management</div>
+            <div class="description">Keep company data consistent and enriched.</div>
+        </div>
+    </a>
+    <a class="item" href="{% url 'crm:ai_enrichment' %}">
+        <i class="robot icon"></i>
+        <div class="content">
+            <div class="header">AI Enrichment</div>
+            <div class="description">Enrich your leads and companies with AI-powered data.</div>
+        </div>
+    </a>
+    <div class="item disabled">
+        <i class="bell icon"></i>
+        <div class="content">
+            <div class="header">Notifications</div>
+            <div class="description">Stay on top of important activities. Coming soon.</div>
         </div>
     </div>
 </div>

@@ -20,42 +20,39 @@
         <h2 class="ui header">Company Management</h2>
     </div>
     <div class="four wide column right aligned">
-        <a href="{% url 'companies:company_create' %}" class="ui primary button">+ New Company</a>
+        <a href="{% url 'companies:company_create' %}" class="ui basic button">+ New Company</a>
     </div>
 </div>
 
-<div class="ui segment" style="padding: 0;">
-    <form method="get" action="{% url 'companies:company_list' %}" class="ui form" style="margin: 0;">
-        <div class="field">
-            <div class="ui action input fluid">
-                <input type="text" name="search" value="{{ search_query }}" placeholder="Search company by name or domain...">
-                <button type="submit" class="ui button">Search</button>
-                {% if search_query %}
-                <a href="{% url 'companies:company_list' %}" class="ui button">Clear</a>
-                {% endif %}
-            </div>
+<form method="get" action="{% url 'companies:company_list' %}" class="ui form">
+    <div class="field">
+        <div class="ui fluid input">
+            <input type="text" name="search" value="{{ search_query }}" placeholder="Search company by name or domain...">
         </div>
-    </form>
-</div>
+    </div>
+    <button type="submit" class="ui basic button">Search</button>
+    {% if search_query %}
+    <a href="{% url 'companies:company_list' %}" class="ui basic button">Clear</a>
+    {% endif %}
+</form>
 
-<div class="ui small statistics">
-    <div class="statistic">
-        <div class="value">{{ total_companies }}</div>
-        <div class="label">Total Companies</div>
-    </div>
-    <div class="statistic">
-        <div class="value">{{ with_linkedin }}</div>
-        <div class="label">With LinkedIn</div>
-    </div>
-    <div class="statistic">
-        <div class="value">{% if total_companies > 0 %}{% widthratio with_linkedin total_companies 100 %}%{% else %}0%{% endif %}</div>
-        <div class="label">LinkedIn Coverage</div>
-    </div>
+<div class="ui three statistics">
+        <div class="statistic">
+            <div class="value">{{ total_companies }}</div>
+            <div class="label">Total Companies</div>
+        </div>
+        <div class="statistic">
+            <div class="value">{{ with_linkedin }}</div>
+            <div class="label">With LinkedIn</div>
+        </div>
+        <div class="statistic">
+            <div class="value">{% if total_companies > 0 %}{% widthratio with_linkedin total_companies 100 %}%{% else %}0%{% endif %}</div>
+            <div class="label">LinkedIn Coverage</div>
+        </div>
 </div>
 
 {% if companies %}
-<div class="ui segment" style="padding: 0;">
-    <table class="ui celled striped table" style="margin: 0;">
+<table class="ui table">
         <thead>
             <tr>
                 <th>Company Name</th>
@@ -70,7 +67,7 @@
         <tbody>
             {% for company in companies %}
             <tr>
-                <td><strong>{{ company.company_name|default:company.domain }}</strong></td>
+                <td><a href="{% url 'companies:company_detail' company.domain %}" title="Show details"><strong>{{ company.company_name|default:company.domain }}</strong></a></td>
                 <td>{{ company.domain }}</td>
                 <td>{{ company.industry|default:"-" }}</td>
                 <td>{{ company.company_size|default:"-" }}</td>
@@ -84,23 +81,21 @@
                 <td>{{ company.lead_set.count }}</td>
                 <td>
                     <div class="ui small icon buttons">
-                        <a href="{% url 'companies:company_detail' company.domain %}" class="ui primary basic button" title="View"><i class="eye icon"></i></a>
-                        <a href="{% url 'companies:company_update' company.domain %}" class="ui positive basic button" title="Edit"><i class="edit icon"></i></a>
-                        <a href="{% url 'companies:company_delete' company.domain %}" class="ui negative basic button" title="Delete"><i class="trash alternate outline icon"></i></a>
+                        <a href="{% url 'companies:company_update' company.domain %}" class="ui basic icon button" title="Edit"><i class="edit icon"></i></a>
+                        <a href="{% url 'companies:company_delete' company.domain %}" class="ui basic icon button" title="Delete"><i class="trash alternate outline icon"></i></a>
                     </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
-    </table>
-</div>
+</table>
 {% else %}
 <div class="ui placeholder segment">
     <div class="ui icon header">
         <i class="building icon"></i>
         No companies yet
     </div>
-    <a href="{% url 'crm:import_csv' %}" class="ui primary button">Import CSV</a>
+    <a href="{% url 'crm:import_csv' %}" class="ui basic button">Import CSV</a>
 </div>
 {% endif %}
 {% endblock %}
@@ -110,8 +105,8 @@
     <div class="header">Enrich companies</div>
     <div class="content">Do you want to re-enrich existing fields too?</div>
     <div class="actions">
-        <button class="ui button" onclick="runCompanyEnrichment('empty')">Only empty fields</button>
-        <button class="ui primary button" onclick="runCompanyEnrichment('all')">Re-enrich all</button>
+        <button class="ui basic button" onclick="runCompanyEnrichment('empty')">Only empty fields</button>
+        <button class="ui basic button" onclick="runCompanyEnrichment('all')">Re-enrich all</button>
     </div>
 </div>
 

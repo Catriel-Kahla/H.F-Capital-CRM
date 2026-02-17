@@ -42,8 +42,9 @@ Both loaded from Google Fonts in `base.html`.
 | <span style="display:inline-block;width:3.5em;height:3.5em;border-radius:6px;background:#333;border:1px solid #333;vertical-align:middle"></span> | Nav links, input text, caret | Dark gray | `#333` |
 | <span style="display:inline-block;width:3.5em;height:3.5em;border-radius:6px;background:#999;border:1px solid #999;vertical-align:middle"></span> | Input placeholder | Gray | `#999` |
 | <span style="display:inline-block;width:3.5em;height:3.5em;border-radius:6px;background:#2B3B80;border:1px solid #2B3B80;vertical-align:middle"></span> | Primary (buttons, main background) | Navy | `#2B3B80` |
+| <span style="display:inline-block;width:3.5em;height:3.5em;border-radius:6px;background:#a3caf77a;border:1px solid #ddd;vertical-align:middle"></span> | **Accent (light blue)** | Light blue | `#a3caf77a` / `var(--light-blue)` |
 
-Use these consistently for new pages and components so the product stays on-brand.
+Use these consistently for new pages and components so the product stays on-brand. The accent color is used for table headers and alternating row backgrounds.
 
 ## Other docs
 

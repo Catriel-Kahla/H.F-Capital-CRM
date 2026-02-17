@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,60 +7,42 @@
     <title>{% block title %}CRM Django{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.2/dist/semantic.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --light-blue: #a3caf77a;
         }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            background: #bcbcbc;
-            min-height: 100vh;
-            padding-top: 72px;
+        body { padding-top: 3.5rem; }
+        /* Flat UI: no shadows, neutral borders only */
+        .ui.segment,
+        .ui.table,
+        .ui.menu,
+        .ui.button,
+        .ui.input,
+        .ui.statistics,
+        .ui.input input,
+        .ui.action.input {
+            box-shadow: none !important;
         }
-        
-        .app-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+        .ui.input input:focus,
+        .ui.action.input input:focus {
+            box-shadow: none !important;
         }
-
-        .custom-navbar {
-            border-bottom: 2px solid #2bc797 !important;
-            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08) !important;
-            background: #ffffff !important;
+        .ui.table thead th {
+            background-color: var(--light-blue) !important;
         }
-
-        .custom-navbar .header.item {
-            font-size: 20px;
-            font-weight: 700;
-            color: #111827 !important;
+        .ui.striped.table tbody tr:nth-child(even),
+        .ui.table tbody tr:nth-child(even) {
+            background-color: var(--light-blue) !important;
         }
-
-        .custom-navbar .item {
-            color: #1f2937 !important;
-        }
-
-        .custom-navbar .item:hover {
-            background: rgba(15, 23, 42, 0.08) !important;
-        }
-        
-        main {
-            background: transparent;
-            padding: 10px 0 20px 0;
-            border-radius: 0;
-            box-shadow: none;
-        }
-        
-        {% block extra_css %}{% endblock %}
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="ui top fixed menu custom-navbar">
+    <div class="ui top fixed menu">
         <div class="ui container">
-            <a class="header item" href="{% url 'crm:home' %}">H.F Capital - CRM</a>
+            <a class="header item" href="{% url 'crm:home' %}">
+                <img src="{% static 'img/Space Ship Logo SVG.svg' %}" alt="" class="ui mini image">
+                Browserling
+            </a>
             <a class="item" href="{% url 'crm:home' %}">Home</a>
             <a class="item" href="{% url 'leads:lead_list' %}">Leads</a>
             <a class="item" href="{% url 'companies:company_list' %}">Companies</a>
@@ -67,10 +50,8 @@
         </div>
     </div>
 
-    <div class="app-container">
-        <main>
-            {% block content %}{% endblock %}
-        </main>
+    <div class="ui main container">
+        {% block content %}{% endblock %}
     </div>
     
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

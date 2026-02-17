@@ -16,38 +16,36 @@
 {% endif %}
 
 <div class="ui stackable grid">
-    <div class="ten wide column">
+    <div class="twelve wide column">
         <h2 class="ui header">Lead Management</h2>
     </div>
-    <div class="six wide column right aligned">
-            <form method="post" action="{% url 'leads:recalculate_scores' %}" style="display: inline;">
-                {% csrf_token %}
-                <input type="hidden" name="next" value="{% url 'leads:lead_list' %}">
-                <button type="submit" class="ui orange button"><i class="sync icon"></i> Recalculate Score</button>
-            </form>
-            <a href="{% url 'leads:lead_create' %}" class="ui primary button">+ New Lead</a>
-            <form method="post" action="{% url 'leads:clear_leads' %}" style="display: inline;" onsubmit="return confirm('⚠️ WARNING: This will permanently delete ALL leads and companies. This action cannot be undone. Are you absolutely sure?');">
-                {% csrf_token %}
-                <button type="submit" class="ui red button">Clear All</button>
-            </form>
+    <div class="four wide column right aligned">
+        <form method="post" action="{% url 'leads:recalculate_scores' %}" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'leads:lead_list' %}">
+            <button type="submit" class="ui basic button"><i class="sync icon"></i> Recalculate Score</button>
+        </form>
+        <a href="{% url 'leads:lead_create' %}" class="ui basic button">+ New Lead</a>
+        <form method="post" action="{% url 'leads:clear_leads' %}" style="display: inline;" onsubmit="return confirm('⚠️ WARNING: This will permanently delete ALL leads and companies. This action cannot be undone. Are you absolutely sure?');">
+            {% csrf_token %}
+            <button type="submit" class="ui basic button">Clear All</button>
+        </form>
     </div>
 </div>
 
-<div class="ui segment" style="padding: 0;">
-    <form method="get" action="{% url 'leads:lead_list' %}" class="ui form" style="margin: 0;">
-        <div class="field">
-            <div class="ui action input fluid">
-                <input type="text" name="search" value="{{ search_query }}" placeholder="Search leads by name, email, company, or tag...">
-                <button type="submit" class="ui button">Search</button>
-                {% if search_query %}
-                <a href="{% url 'leads:lead_list' %}" class="ui button">Clear</a>
-                {% endif %}
-            </div>
+<form method="get" action="{% url 'leads:lead_list' %}" class="ui form">
+    <div class="field">
+        <div class="ui fluid input">
+            <input type="text" name="search" value="{{ search_query }}" placeholder="Search leads by name, email, company, or tag...">
         </div>
-    </form>
-</div>
+    </div>
+    <button type="submit" class="ui basic button">Search</button>
+    {% if search_query %}
+    <a href="{% url 'leads:lead_list' %}" class="ui basic button">Clear</a>
+    {% endif %}
+</form>
 
-<div class="ui small statistics">
+<div class="ui three small statistics">
     <div class="statistic">
         <div class="value">{{ leads|length }}</div>
         <div class="label">Total Leads</div>
@@ -63,27 +61,28 @@
 </div>
 
 {% if leads %}
-<div class="ui segment" style="padding: 0;">
-    <div style="padding: 1em;">
-        <form method="post" action="{% url 'leads:send_to_mailchimp' %}" class="ui form">
-            {% csrf_token %}
+<form method="post" action="{% url 'leads:send_to_mailchimp' %}" class="ui form">
+    {% csrf_token %}
 
+    <div class="ui segment">
+        <div class="ui form">
             <div class="fields">
-                <div class="ten wide field">
+                <div class="eight wide field">
                     <label>Tag selected leads</label>
-                    <input type="text" name="tag_name" placeholder="e.g. webinar-2026, enterprise, nurture" />
+                    <input type="text" name="tag_name" placeholder="e.g. webinar-2026, enterprise, nurture" class="ui input" />
                 </div>
-                <div class="six wide field" style="display: flex; align-items: flex-end; gap: 0.5em;">
-                    <button type="submit" class="ui blue button">
-                        Send selected to Mailchimp
-                    </button>
-                    <button type="submit" class="ui teal button" formaction="{% url 'leads:bulk_apply_tag' %}">
-                        Apply tag to selected
-                    </button>
+                <div class="eight wide field">
+                    <label>&nbsp;</label>
+                    <div class="ui buttons">
+                        <button type="submit" class="ui basic button"><i class="mail icon"></i> Send selected to Mailchimp</button>
+                        <button type="submit" class="ui basic button" formaction="{% url 'leads:bulk_apply_tag' %}"><i class="tag icon"></i> Apply tag to selected</button>
+                    </div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <table class="ui celled striped table" style="margin: 0;">
+    <table class="ui striped table">
                 <thead>
                     <tr>
                         <th><input type="checkbox" id="select-all"></th>
@@ -101,8 +100,8 @@
                     {% for lead in leads %}
                     <tr>
                         <td><input type="checkbox" class="lead-checkbox" name="selected_leads" value="{{ lead.pk }}"></td>
-                        <td>{{ lead.email }}</td>
-                        <td>{{ lead.pdl_first_name }} {{ lead.pdl_last_name }}</td>
+                        <td><a href="{% url 'leads:lead_detail' lead.email %}" title="Show details">{{ lead.email }}</a></td>
+                        <td><a href="{% url 'leads:lead_detail' lead.email %}" title="Show details">{{ lead.pdl_first_name }} {{ lead.pdl_last_name }}</a></td>
                         <td>{{ lead.company.company_name|default:lead.company.domain }}</td>
                         <td><strong>{{ lead.lead_score }}</strong></td>
                         <td>
@@ -122,7 +121,7 @@
                         </td>
                         <td>
                             {% if lead.email_status == 'active' %}
-                                <span class="ui green label">{{ lead.get_email_status_display }}</span>
+                                <span class="ui green basic label">{{ lead.get_email_status_display }}</span>
                             {% elif lead.email_status == 'bounced' %}
                                 <span class="ui red label">{{ lead.get_email_status_display }}</span>
                             {% else %}
@@ -138,23 +137,21 @@
                         </td>
                         <td>
                             <div class="ui small icon buttons">
-                                <a href="{% url 'leads:lead_detail' lead.email %}" class="ui primary basic button" title="View"><i class="eye icon"></i></a>
-                                <a href="{% url 'leads:lead_update' lead.email %}" class="ui positive basic button" title="Edit"><i class="edit icon"></i></a>
-                                <a href="{% url 'leads:lead_delete' lead.email %}" class="ui negative basic button" title="Delete"><i class="trash alternate outline icon"></i></a>
+                                <a href="{% url 'leads:lead_update' lead.email %}" class="ui basic icon button" title="Edit"><i class="edit icon"></i></a>
+                                <a href="{% url 'leads:lead_delete' lead.email %}" class="ui basic icon button" title="Delete"><i class="trash alternate outline icon"></i></a>
                             </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
-            </table>
-        </form>
+    </table>
+</form>
 
-        <div class="ui divider"></div>
-
-        <form method="post" action="{% url 'leads:send_tag_to_mailchimp' %}" class="ui form">
+<div class="ui segment">
+    <form method="post" action="{% url 'leads:send_tag_to_mailchimp' %}" class="ui form">
             {% csrf_token %}
             <div class="fields">
-                <div class="ten wide field">
+                <div class="eight wide field">
                     <label>Send all leads with tag to Mailchimp</label>
                     <select name="tag_id" class="ui dropdown">
                         <option value="">-- choose tag --</option>
@@ -163,12 +160,12 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="six wide field" style="display: flex; align-items: flex-end;">
-                    <button type="submit" class="ui blue button">Send tagged leads to Mailchimp</button>
+                <div class="eight wide field">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="ui basic button"><i class="mail icon"></i> Send tagged leads to Mailchimp</button>
                 </div>
             </div>
-        </form>
-    </div>
+    </form>
 </div>
 {% else %}
 <div class="ui placeholder segment">
@@ -176,7 +173,7 @@
         <i class="users icon"></i>
         No leads registered
     </div>
-    <a href="{% url 'leads:lead_create' %}" class="ui primary button">+ Create First Lead</a>
+    <a href="{% url 'leads:lead_create' %}" class="ui basic button">+ Create First Lead</a>
 </div>
 {% endif %}
 {% endblock %}
@@ -186,8 +183,8 @@
     <div class="header">Enrich leads</div>
     <div class="content">Do you want to re-enrich existing fields too?</div>
     <div class="actions">
-        <button class="ui button" onclick="runLeadEnrichment('empty')">Only empty fields</button>
-        <button class="ui primary button" onclick="runLeadEnrichment('all')">Re-enrich all</button>
+        <button class="ui basic button" onclick="runLeadEnrichment('empty')">Only empty fields</button>
+        <button class="ui basic button" onclick="runLeadEnrichment('all')">Re-enrich all</button>
     </div>
 </div>
 

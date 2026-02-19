@@ -2,13 +2,76 @@
 
 ## Version History
 
-Version | Date       | Author         | Description
-------------------------------------------------------------
-0.3.0   | 2026-02-10 | Catriel Kahla  | Non-stable release
-0.2.0   | 2026-01-29 | Catriel Kahla  | Non-stable release
-0.1.0   | 2026-01-19 | Catriel Kahla  | Initial non-stable release
+Version | Date       | Author          | Description
+-------------------------------------------------------------
+0.3.2   | 2026-02-19 | Catriel Kahla   | Non-stable subversion
+0.3.1   | 2026-02-17 | Jonathan Nelson | Non-stable subversion
+0.3.0   | 2026-02-10 | Catriel Kahla   | Non-stable release
+0.2.0   | 2026-01-29 | Catriel Kahla   | Non-stable release
+0.1.0   | 2026-01-19 | Catriel Kahla   | Initial non-stable release
 
 ---
+## Version 0.3.2 – Subversion
+
+### Leads List (UI + UX)
+- Added a **Job Title** column to `/leads`.
+- Reordered columns to: **Name**, **Job Title**, **Email**, Company, Score, Stage (checkbox first).
+- Removed the **Status** column from the `/leads` list table.
+- Added **column sorting** by clicking header titles:
+  - Name, Job Title, Email, Company: A→Z
+  - Score, Stage: max→min
+  - Active sort shows a small arrow icon in the header.
+- Added **pagination** to `/leads` (10 leads per page) with Previous/Next and a **Go to page** number input.
+- Pagination and sorting preserve existing search/company filters.
+
+### Lead Details (Tabs)
+- Lead details view now uses **Fomantic tabs**: Personal, Company, Scoring, Activity, CRM, System Dates.
+
+### Companies List (UI + UX)
+- Added sortable headers and **pagination (10 per page)** to `/companies`.
+- Domain column is now clickable and opens the company website in a new tab.
+
+### Company Details (Tabs)
+- Company details view now uses **Fomantic tabs** (Basic Information, Address, Contact & Social, CRM, Funding, System Dates).
+- Added a **Linked Leads** tab showing all leads related to the company.
+
+### Branding
+- Added an **SVG favicon/app icon** using `static/img/Space Ship Logo SVG.svg` (favicon + shortcut icon + Apple touch icon).
+
+
+------------------------------------------------------------
+
+## Version 0.3.1 – Subversion
+
+### UI Refresh (Flat Design)
+- Updated UI to a flat design with a light blue accent via the `--light-blue` CSS variable.
+- Uses vanilla Fomantic UI styling with a box-shadow override.
+- Companies and leads pages now use a flatter layout (no segments for the main list layout), with `ui table` and basic buttons.
+
+### Companies List Improvements
+- Company name links to the company detail page with a "Show details" tooltip.
+- Leads column: fixed reverse relation reference (`lead_set` → `leads`).
+- Leads count now shows as a clickable "X leads" link that navigates to a filtered leads list.
+
+### Leads List Improvements
+- Lead email/name links to lead detail with a "Show details" tooltip; removed the View icon from action buttons.
+- Striped leads table.
+- Active status now renders as a green basic label.
+- Mailchimp/tag actions grouped into segments with icons.
+- Added `?company=domain` filter:
+  - Shows a "Leads for [Company]" subheader
+  - Includes a "Show all" link
+  - Search preserves the active company filter
+
+### Assets & Icons
+- Added brand logo to static assets.
+- LinkedIn icon uses the Fomantic `grey` class for a muted appearance.
+
+### Dependencies
+- Updated `requirements.txt` dependencies and compatibility.
+
+------------------------------------------------------------
+
 ## Version 0.3.0 – Non-stable
 
 ### Lead Tag System (Email Tagging)

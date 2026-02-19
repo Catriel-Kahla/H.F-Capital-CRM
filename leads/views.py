@@ -1,7 +1,9 @@
 from .mailchimp_utils import add_lead_to_mailchimp
+from django.core.paginator import Paginator
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.db.models import Q, Avg
+from django.db.models import Avg, Case, IntegerField, Q, Value, When
+from django.db.models.functions import Coalesce, Lower
 from .models import Lead, Company, LeadTag
 from .forms import LeadForm, CompanyForm
 from .enrichment import enrich_lead
@@ -13,6 +15,9 @@ def lead_list(request):
     leads = Lead.objects.select_related('company').prefetch_related('tags').all()
     search_query = request.GET.get('search', '').strip()
     company_domain = request.GET.get('company', '').strip()
+    sort_key = (request.GET.get('sort') or '').strip().lower()
+    sort_dir = (request.GET.get('dir') or '').strip().lower()
+    page_number = request.GET.get('page', '').strip()
     
     # Filter by company domain if provided
     if company_domain:
@@ -34,6 +39,96 @@ def lead_list(request):
         avg_score = round(avg_score, 1)
     else:
         avg_score = '--'
+
+    total_leads = leads.count()
+
+    # Sorting (safe allow-list)
+    allowed_sort_keys = {'name', 'job_title', 'email', 'company', 'score', 'stage'}
+    if sort_key not in allowed_sort_keys:
+        sort_key = ''
+
+    def _default_dir_for(key: str) -> str:
+        return 'desc' if key in {'score', 'stage'} else 'asc'
+
+    # Per requested UX: each column has a fixed direction
+    # - name/job_title/email/company: A→Z
+    # - score/stage: max→min
+    if sort_key:
+        sort_dir = _default_dir_for(sort_key)
+
+    if sort_key:
+        prefix = '-' if sort_dir == 'desc' else ''
+
+        if sort_key == 'name':
+            leads = leads.annotate(
+                first_name_sort=Lower(Coalesce('pdl_first_name', Value(''))),
+                last_name_sort=Lower(Coalesce('pdl_last_name', Value(''))),
+            ).order_by(
+                f'{prefix}first_name_sort',
+                f'{prefix}last_name_sort',
+                'email',
+            )
+        elif sort_key == 'job_title':
+            leads = leads.annotate(
+                job_title_sort=Lower(Coalesce('pdl_job_title', Value(''))),
+            ).order_by(
+                f'{prefix}job_title_sort',
+                'email',
+            )
+        elif sort_key == 'email':
+            leads = leads.annotate(
+                email_sort=Lower('email'),
+            ).order_by(
+                f'{prefix}email_sort',
+            )
+        elif sort_key == 'company':
+            leads = leads.annotate(
+                company_sort=Lower(Coalesce('company__company_name', 'company__domain')),
+            ).order_by(
+                f'{prefix}company_sort',
+                'email',
+            )
+        elif sort_key == 'score':
+            leads = leads.order_by(f'{prefix}lead_score', 'email')
+        elif sort_key == 'stage':
+            leads = leads.annotate(
+                stage_rank=Case(
+                    When(lead_stage='low', then=Value(0)),
+                    When(lead_stage='medium', then=Value(1)),
+                    When(lead_stage='high', then=Value(2)),
+                    When(lead_stage='very_high', then=Value(3)),
+                    When(lead_stage='enterprise', then=Value(4)),
+                    default=Value(-1),
+                    output_field=IntegerField(),
+                ),
+            ).order_by(f'{prefix}stage_rank', 'email')
+
+    # Prebuild sort URLs for header links (preserve current filters/search)
+    def build_sort_url(key: str) -> str:
+        params = request.GET.copy()
+        default_dir = _default_dir_for(key)
+        params['sort'] = key
+        params['dir'] = default_dir
+        params.pop('page', None)
+        return '?' + params.urlencode()
+
+    # Pagination (10 per page)
+    paginator = Paginator(leads, 10)
+    page_obj = paginator.get_page(page_number or 1)
+
+    params_wo_page = request.GET.copy()
+    params_wo_page.pop('page', None)
+    querystring = params_wo_page.urlencode()
+
+    def build_page_url(page: int) -> str:
+        params = params_wo_page.copy()
+        params['page'] = str(page)
+        return '?' + params.urlencode()
+
+    pagination_params: list[tuple[str, str]] = []
+    for key, values in params_wo_page.lists():
+        for value in values:
+            pagination_params.append((key, value))
     
     all_tags = LeadTag.objects.all().order_by('name')
     filter_company = None
@@ -41,11 +136,27 @@ def lead_list(request):
         filter_company = Company.objects.filter(domain=company_domain).first()
 
     return render(request, 'leads/lead_list.html', {
-        'leads': leads,
+        'leads': page_obj,
         'all_tags': all_tags,
         'search_query': search_query,
         'avg_score': avg_score,
         'filter_company': filter_company,
+        'total_leads': total_leads,
+        'page_obj': page_obj,
+        'querystring': querystring,
+        'page_prev_url': build_page_url(page_obj.previous_page_number()) if page_obj.has_previous() else None,
+        'page_next_url': build_page_url(page_obj.next_page_number()) if page_obj.has_next() else None,
+        'pagination_params': pagination_params,
+        'sort_key': sort_key,
+        'sort_dir': sort_dir,
+        'sort_urls': {
+            'name': build_sort_url('name'),
+            'job_title': build_sort_url('job_title'),
+            'email': build_sort_url('email'),
+            'company': build_sort_url('company'),
+            'score': build_sort_url('score'),
+            'stage': build_sort_url('stage'),
+        },
     })
 
 

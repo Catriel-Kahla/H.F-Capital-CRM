@@ -2,20 +2,24 @@
 
 - [ ] Add tag modal: Use Fomantic searchable dropdown for tag input — list existing tags (`all_tags`), allow selecting or typing new tag name
 - [ ] Filter leads by tags
-- [ ] Add job title column to leads
-- [ ] Rearrange lead columns: Name, Title, Email
-- [ ] Remove Status column from leads list
+- [x] Add job title column to leads
+- [x] Rearrange lead columns: Name, Title, Email
+- [x] Remove Status column from leads list
 - [ ] Enrich new leads: add to server database
 - [ ] Create action dropdown with specific actions for selected leads or companies
 - [ ] Add tags to selected action
-- [ ] Add pagination
-- [ ] Add filtering to columns
+- [x] Add pagination
+- [x] Add filtering to columns
 - [ ] Add way to create new leads
 - [ ] Create `is_enriched` field in database
 - [ ] Create way to bulk enrich leads from dashboard
 - [ ] In enrichment: derive first/last name from email if not available
-- [ ] Domain column: link to company's external website
-- [ ] Add tabs to company table ref: https://fomantic-ui.com/modules/tab.html#/examples
-- [ ] Add associated leads to company table
+- [x] Domain column: link to company's external website
+- [x] Add tabs to company table ref: https://fomantic-ui.com/modules/tab.html#/examples
+- [x] Add associated leads to company table
 - [ ] Create database backup system
 - [ ] Move to production database (PostgreSQL) instead of SQLite
+- [ ] Add ChatGPT API Key
+- [ ] Add Gemini API Key
+- [ ] Add PDL API Key and credits
+- [x] Add icon page

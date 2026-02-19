@@ -38,6 +38,8 @@
 
 <form method="get" action="{% url 'leads:lead_list' %}" class="ui form">
     {% if filter_company %}<input type="hidden" name="company" value="{{ filter_company.domain }}">{% endif %}
+    {% if sort_key %}<input type="hidden" name="sort" value="{{ sort_key }}">{% endif %}
+    {% if sort_dir %}<input type="hidden" name="dir" value="{{ sort_dir }}">{% endif %}
     <div class="field">
         <div class="ui fluid input">
             <input type="text" name="search" value="{{ search_query }}" placeholder="Search leads by name, email, company, or tag...">
@@ -51,11 +53,11 @@
 
 <div class="ui three small statistics">
     <div class="statistic">
-        <div class="value">{{ leads|length }}</div>
+        <div class="value">{{ total_leads }}</div>
         <div class="label">Total Leads</div>
     </div>
     <div class="statistic">
-        <div class="value">{{ leads|length }}</div>
+        <div class="value">{{ total_leads }}</div>
         <div class="label">Active Leads</div>
     </div>
     <div class="statistic">
@@ -90,12 +92,24 @@
                 <thead>
                     <tr>
                         <th><input type="checkbox" id="select-all"></th>
-                        <th>Email</th>
-                        <th>Name</th>
-                        <th>Company</th>
-                        <th>Score</th>
-                        <th>Stage</th>
-                        <th>Status</th>
+                        <th>
+                            <a href="{{ sort_urls.name }}">Name{% if sort_key == 'name' %} <i class="sort alphabet down icon"></i>{% endif %}</a>
+                        </th>
+                        <th>
+                            <a href="{{ sort_urls.job_title }}">Job Title{% if sort_key == 'job_title' %} <i class="sort alphabet down icon"></i>{% endif %}</a>
+                        </th>
+                        <th>
+                            <a href="{{ sort_urls.email }}">Email{% if sort_key == 'email' %} <i class="sort alphabet down icon"></i>{% endif %}</a>
+                        </th>
+                        <th>
+                            <a href="{{ sort_urls.company }}">Company{% if sort_key == 'company' %} <i class="sort alphabet down icon"></i>{% endif %}</a>
+                        </th>
+                        <th>
+                            <a href="{{ sort_urls.score }}">Score{% if sort_key == 'score' %} <i class="sort numeric down icon"></i>{% endif %}</a>
+                        </th>
+                        <th>
+                            <a href="{{ sort_urls.stage }}">Stage{% if sort_key == 'stage' %} <i class="sort numeric down icon"></i>{% endif %}</a>
+                        </th>
                         <th>Tags</th>
                         <th>Actions</th>
                     </tr>
@@ -104,8 +118,9 @@
                     {% for lead in leads %}
                     <tr>
                         <td><input type="checkbox" class="lead-checkbox" name="selected_leads" value="{{ lead.pk }}"></td>
-                        <td><a href="{% url 'leads:lead_detail' lead.email %}" title="Show details">{{ lead.email }}</a></td>
                         <td><a href="{% url 'leads:lead_detail' lead.email %}" title="Show details">{{ lead.pdl_first_name }} {{ lead.pdl_last_name }}</a></td>
+                        <td><a href="{% url 'leads:lead_detail' lead.email %}" title="Show details">{{ lead.pdl_job_title|default:"-" }}</a></td>
+                        <td><a href="{% url 'leads:lead_detail' lead.email %}" title="Show details">{{ lead.email }}</a></td>
                         <td>{% if lead.company %}<a href="{% url 'companies:company_detail' lead.company.domain %}" title="Show details">{{ lead.company.company_name|default:lead.company.domain }}</a>{% else %}-{% endif %}</td>
                         <td><strong>{{ lead.lead_score }}</strong></td>
                         <td>
@@ -122,15 +137,6 @@
                                     <span class="ui green basic label">{{ lead.get_lead_stage_display }}</span>
                                 {% endif %}
                             {% else %}-{% endif %}
-                        </td>
-                        <td>
-                            {% if lead.email_status == 'active' %}
-                                <span class="ui green basic label">{{ lead.get_email_status_display }}</span>
-                            {% elif lead.email_status == 'bounced' %}
-                                <span class="ui red label">{{ lead.get_email_status_display }}</span>
-                            {% else %}
-                                <span class="ui grey label">{{ lead.get_email_status_display }}</span>
-                            {% endif %}
                         </td>
                         <td>
                             {% for t in lead.tags.all %}
@@ -150,6 +156,38 @@
                 </tbody>
     </table>
 </form>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="ui clearing segment">
+        <div class="ui right floated pagination menu">
+            {% if page_prev_url %}
+                <a class="item" href="{{ page_prev_url }}">Previous</a>
+            {% else %}
+                <div class="disabled item">Previous</div>
+            {% endif %}
+
+            <div class="item">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</div>
+
+            <div class="item">
+                <form method="get" action="{% url 'leads:lead_list' %}" style="margin: 0;">
+                    {% for k, v in pagination_params %}
+                        <input type="hidden" name="{{ k }}" value="{{ v }}" />
+                    {% endfor %}
+                    <div class="ui mini action input">
+                        <input type="number" name="page" min="1" max="{{ page_obj.paginator.num_pages }}" value="{{ page_obj.number }}" aria-label="Go to page" />
+                        <button class="ui basic button" type="submit">Go</button>
+                    </div>
+                </form>
+            </div>
+
+            {% if page_next_url %}
+                <a class="item" href="{{ page_next_url }}">Next</a>
+            {% else %}
+                <div class="disabled item">Next</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 
 <div class="ui segment">
     <form method="post" action="{% url 'leads:send_tag_to_mailchimp' %}" class="ui form">

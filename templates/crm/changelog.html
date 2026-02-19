@@ -8,9 +8,30 @@
         <div class="item">
             <i class="calendar icon"></i>
             <div class="content">
+                <div class="header">2026-02-19</div>
+                <div class="description">
+                    <b>Subversion 0.3.2 - Leads list sorting + pagination</b><br>
+                    <ul>
+                        <li>Leads list: added <b>Job Title</b> column and reordered columns to <b>Name</b>, <b>Job Title</b>, <b>Email</b>, Company, Score, Stage.</li>
+                        <li>Leads list: removed the <b>Status</b> column from the table.</li>
+                        <li>Leads list: added sortable headers (click column title) for Name, Job Title, Email, Company (A→Z) and Score, Stage (max→min), with an arrow icon indicating the active sort.</li>
+                        <li>Leads list: added pagination (10 per page) with Previous/Next and a Go-to-page number input; preserves active search/company filters and sorting.</li>
+                        <li>Lead details: reorganized into Fomantic tabs (Personal, Company, Scoring, Activity, CRM, System Dates).</li>
+                        <li>Companies list: added sortable headers + pagination (10 per page) with a Go-to-page input.</li>
+                        <li>Companies list: Domain column is now clickable and opens the company website in a new tab.</li>
+                        <li>Company details: reorganized into Fomantic tabs and added a <b>Linked Leads</b> tab.</li>
+                        <li>Branding: added an SVG favicon/app icon using <code>static/img/Space Ship Logo SVG.svg</code>.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="item">
+            <i class="calendar icon"></i>
+            <div class="content">
                 <div class="header">2026-02-16</div>
                 <div class="description">
-                    <b>UI refresh, companies list improvements, dependencies</b><br>
+                    <b>Subversion 0.3.1 - UI refresh, companies list improvements, dependencies</b><br>
                     <ul>
                         <li>Flat design with light blue accent (<code>--light-blue</code> CSS var); vanilla Fomantic, box-shadow override.</li>
                         <li>Companies and leads: flat layout, no segments, <code>ui table</code>, basic buttons.</li>

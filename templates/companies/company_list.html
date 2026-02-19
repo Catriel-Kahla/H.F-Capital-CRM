@@ -25,6 +25,8 @@
 </div>
 
 <form method="get" action="{% url 'companies:company_list' %}" class="ui form">
+    {% if sort_key %}<input type="hidden" name="sort" value="{{ sort_key }}">{% endif %}
+    {% if sort_dir %}<input type="hidden" name="dir" value="{{ sort_dir }}">{% endif %}
     <div class="field">
         <div class="ui fluid input">
             <input type="text" name="search" value="{{ search_query }}" placeholder="Search company by name or domain...">
@@ -51,16 +53,26 @@
         </div>
 </div>
 
-{% if companies %}
+{% if companies.object_list %}
 <table class="ui table">
         <thead>
             <tr>
-                <th>Company Name</th>
-                <th>Domain</th>
-                <th>Industry</th>
-                <th>Size</th>
+                <th>
+                    <a href="{{ sort_urls.name }}">Company Name{% if sort_key == 'name' %} <i class="sort alphabet down icon"></i>{% endif %}</a>
+                </th>
+                <th>
+                    <a href="{{ sort_urls.domain }}">Domain{% if sort_key == 'domain' %} <i class="sort alphabet down icon"></i>{% endif %}</a>
+                </th>
+                <th>
+                    <a href="{{ sort_urls.industry }}">Industry{% if sort_key == 'industry' %} <i class="sort alphabet down icon"></i>{% endif %}</a>
+                </th>
+                <th>
+                    <a href="{{ sort_urls.size }}">Size{% if sort_key == 'size' %} <i class="sort numeric down icon"></i>{% endif %}</a>
+                </th>
                 <th>LinkedIn</th>
-                <th>Leads</th>
+                <th>
+                    <a href="{{ sort_urls.leads }}">Leads{% if sort_key == 'leads' %} <i class="sort numeric down icon"></i>{% endif %}</a>
+                </th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -68,7 +80,17 @@
             {% for company in companies %}
             <tr>
                 <td><a href="{% url 'companies:company_detail' company.domain %}" title="Show details"><strong>{{ company.company_name|default:company.domain }}</strong></a></td>
-                <td>{{ company.domain }}</td>
+                <td>
+                    {% if company.domain %}
+                        {% if '://' in company.domain %}
+                            <a href="{{ company.domain }}" target="_blank" rel="noopener noreferrer">{{ company.domain }}</a>
+                        {% else %}
+                            <a href="https://{{ company.domain }}" target="_blank" rel="noopener noreferrer">{{ company.domain }}</a>
+                        {% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
                 <td>{{ company.industry|default:"-" }}</td>
                 <td>{{ company.company_size|default:"-" }}</td>
                 <td>
@@ -78,7 +100,7 @@
                     -
                     {% endif %}
                 </td>
-                <td><a href="{% url 'leads:lead_list' %}?company={{ company.domain }}" title="View leads for {{ company.company_name|default:company.domain }}">{{ company.leads.count }} lead{{ company.leads.count|pluralize }}</a></td>
+                <td><a href="{% url 'leads:lead_list' %}?company={{ company.domain }}" title="View leads for {{ company.company_name|default:company.domain }}">{{ company.leads_count }} lead{{ company.leads_count|pluralize }}</a></td>
                 <td>
                     <div class="ui small icon buttons">
                         <a href="{% url 'companies:company_update' company.domain %}" class="ui basic icon button" title="Edit"><i class="edit icon"></i></a>
@@ -89,6 +111,38 @@
             {% endfor %}
         </tbody>
 </table>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="ui clearing segment">
+    <div class="ui right floated pagination menu">
+        {% if page_prev_url %}
+            <a class="item" href="{{ page_prev_url }}">Previous</a>
+        {% else %}
+            <div class="disabled item">Previous</div>
+        {% endif %}
+
+        <div class="item">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</div>
+
+        <div class="item">
+            <form method="get" action="{% url 'companies:company_list' %}" style="margin: 0;">
+                {% for k, v in pagination_params %}
+                    <input type="hidden" name="{{ k }}" value="{{ v }}" />
+                {% endfor %}
+                <div class="ui mini action input">
+                    <input type="number" name="page" min="1" max="{{ page_obj.paginator.num_pages }}" value="{{ page_obj.number }}" aria-label="Go to page" />
+                    <button class="ui basic button" type="submit">Go</button>
+                </div>
+            </form>
+        </div>
+
+        {% if page_next_url %}
+            <a class="item" href="{{ page_next_url }}">Next</a>
+        {% else %}
+            <div class="disabled item">Next</div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 {% else %}
 <div class="ui placeholder segment">
     <div class="ui icon header">

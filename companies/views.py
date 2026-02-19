@@ -1,7 +1,9 @@
+from django.core.paginator import Paginator
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.db.models import Q
-from leads.models import Company, CompanyNote
+from django.db.models import Count, IntegerField, Q, Value
+from django.db.models.functions import Coalesce, Lower
+from leads.models import Company, CompanyNote, Lead
 from leads.forms import CompanyForm, CompanyNoteForm
 from leads.enrichment import enrich_company
 import os
@@ -11,26 +13,101 @@ def company_list(request):
     """View to list all companies"""
     companies = Company.objects.all()
     search_query = request.GET.get('search', '').strip()
+    sort_key = (request.GET.get('sort') or '').strip().lower()
+    sort_dir = (request.GET.get('dir') or '').strip().lower()
+    page_number = (request.GET.get('page') or '').strip()
     
     # Filter by search query if provided
     if search_query:
         companies = companies.filter(
-            company_name__icontains=search_query
-        ) | companies.filter(
-            domain__icontains=search_query
+            Q(company_name__icontains=search_query)
+            | Q(domain__icontains=search_query)
         )
     
-    companies = companies.order_by('-company_name')
-    
-    # Estadísticas
+    # Estadísticas (based on the filtered queryset, not paginated)
     total_companies = companies.count()
     with_linkedin = companies.exclude(linkedin__isnull=True).exclude(linkedin='').count()
+
+    # Sorting (safe allow-list)
+    allowed_sort_keys = {'name', 'domain', 'industry', 'size', 'leads'}
+    if sort_key not in allowed_sort_keys:
+        sort_key = ''
+
+    def _default_dir_for(key: str) -> str:
+        return 'desc' if key in {'size', 'leads'} else 'asc'
+
+    # Per requested UX: each column has a fixed direction
+    if sort_key:
+        sort_dir = _default_dir_for(sort_key)
+
+    # Always annotate leads_count so the template doesn't do N+1 queries
+    companies = companies.annotate(leads_count=Count('leads'))
+
+    if sort_key:
+        prefix = '-' if sort_dir == 'desc' else ''
+        if sort_key == 'name':
+            companies = companies.annotate(
+                name_sort=Lower(Coalesce('company_name', 'domain')),
+            ).order_by(f'{prefix}name_sort', 'domain')
+        elif sort_key == 'domain':
+            companies = companies.annotate(domain_sort=Lower('domain')).order_by(f'{prefix}domain_sort')
+        elif sort_key == 'industry':
+            companies = companies.annotate(
+                industry_sort=Lower(Coalesce('industry', Value(''))),
+            ).order_by(f'{prefix}industry_sort', 'domain')
+        elif sort_key == 'size':
+            companies = companies.annotate(
+                size_sort=Coalesce('company_size', Value(-1), output_field=IntegerField()),
+            ).order_by(f'{prefix}size_sort', 'domain')
+        elif sort_key == 'leads':
+            companies = companies.order_by(f'{prefix}leads_count', 'domain')
+    else:
+        # Keep existing default behavior
+        companies = companies.order_by('-company_name')
+
+    # Pagination (10 per page)
+    paginator = Paginator(companies, 10)
+    page_obj = paginator.get_page(page_number or 1)
+
+    params_wo_page = request.GET.copy()
+    params_wo_page.pop('page', None)
+
+    def build_page_url(page: int) -> str:
+        params = params_wo_page.copy()
+        params['page'] = str(page)
+        return '?' + params.urlencode()
+
+    pagination_params: list[tuple[str, str]] = []
+    for key, values in params_wo_page.lists():
+        for value in values:
+            pagination_params.append((key, value))
+
+    # Prebuild sort URLs for header links (preserve current filters/search)
+    def build_sort_url(key: str) -> str:
+        params = request.GET.copy()
+        params.pop('page', None)
+        params['sort'] = key
+        params['dir'] = _default_dir_for(key)
+        return '?' + params.urlencode()
     
     context = {
-        'companies': companies,
+        'companies': page_obj,
         'total_companies': total_companies,
         'with_linkedin': with_linkedin,
         'search_query': search_query,
+        'sort_key': sort_key,
+        'sort_dir': sort_dir,
+        'sort_urls': {
+            'name': build_sort_url('name'),
+            'domain': build_sort_url('domain'),
+            'industry': build_sort_url('industry'),
+            'size': build_sort_url('size'),
+            'leads': build_sort_url('leads'),
+        },
+        'page_obj': page_obj,
+        'page_prev_url': build_page_url(page_obj.previous_page_number()) if page_obj.has_previous() else None,
+        'page_next_url': build_page_url(page_obj.next_page_number()) if page_obj.has_next() else None,
+        'pagination_params': pagination_params,
     }
     return render(request, 'companies/company_list.html', context)
 
@@ -38,7 +115,19 @@ def company_list(request):
 def company_detail(request, pk):
     """View to see company details (read-only)"""
     company = get_object_or_404(Company, domain=pk)
-    return render(request, 'companies/company_detail.html', {'company': company})
+    linked_leads = (
+        Lead.objects.filter(company=company)
+        .prefetch_related('tags')
+        .order_by('-lead_score', 'email')
+    )
+    return render(
+        request,
+        'companies/company_detail.html',
+        {
+            'company': company,
+            'linked_leads': linked_leads,
+        },
+    )
 
 
 def company_notes(request, pk):

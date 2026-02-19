@@ -17,62 +17,87 @@
     </div>
 </div>
 
-<h3 class="ui header">Personal Information</h3>
-<table class="ui definition table">
-    <tbody>
-        <tr><td>Email</td><td><a href="mailto:{{ lead.email }}">{{ lead.email }}</a></td></tr>
-        <tr><td>First Name</td><td>{{ lead.pdl_first_name|default:"Not specified" }}</td></tr>
-        <tr><td>Last Name</td><td>{{ lead.pdl_last_name|default:"Not specified" }}</td></tr>
-        <tr><td>Job Title</td><td>{{ lead.pdl_job_title|default:"Not specified" }}</td></tr>
-        <tr><td>LinkedIn</td><td>{% if lead.pdl_linkedin_url %}<a href="{{ lead.pdl_linkedin_url }}" target="_blank">{{ lead.pdl_linkedin_url }}</a>{% else %}Not available{% endif %}</td></tr>
-        <tr><td>Last Job Verification</td><td>{% if lead.pdl_job_last_verified %}{{ lead.pdl_job_last_verified|date:"d/m/Y H:i" }}{% else %}Not verified{% endif %}</td></tr>
-    </tbody>
-</table>
+<div class="ui top attached tabular menu" id="lead-detail-tabs">
+    <a class="active item" data-tab="personal">Personal</a>
+    <a class="item" data-tab="company">Company</a>
+    <a class="item" data-tab="scoring">Scoring</a>
+    <a class="item" data-tab="activity">Activity</a>
+    <a class="item" data-tab="crm">CRM</a>
+    <a class="item" data-tab="system">System Dates</a>
+</div>
 
-<h3 class="ui header">Company Information</h3>
-<table class="ui definition table">
-    <tbody>
-        <tr><td>Company</td><td><a href="{% url 'companies:company_detail' lead.company.domain %}">{{ lead.company.company_name|default:lead.company.domain }}</a></td></tr>
-        <tr><td>Domain</td><td>{{ lead.company.domain }}</td></tr>
-        <tr><td>Free Email</td><td>{% if lead.is_free_email %}<span class="ui green basic label">Yes</span>{% else %}<span class="ui grey basic label">No</span>{% endif %}</td></tr>
-    </tbody>
-</table>
+<div class="ui bottom attached active tab segment" data-tab="personal">
+    <table class="ui definition table">
+        <tbody>
+            <tr><td>Email</td><td><a href="mailto:{{ lead.email }}">{{ lead.email }}</a></td></tr>
+            <tr><td>First Name</td><td>{{ lead.pdl_first_name|default:"Not specified" }}</td></tr>
+            <tr><td>Last Name</td><td>{{ lead.pdl_last_name|default:"Not specified" }}</td></tr>
+            <tr><td>Job Title</td><td>{{ lead.pdl_job_title|default:"Not specified" }}</td></tr>
+            <tr><td>LinkedIn</td><td>{% if lead.pdl_linkedin_url %}<a href="{{ lead.pdl_linkedin_url }}" target="_blank" rel="noopener">{{ lead.pdl_linkedin_url }}</a>{% else %}Not available{% endif %}</td></tr>
+            <tr><td>Last Job Verification</td><td>{% if lead.pdl_job_last_verified %}{{ lead.pdl_job_last_verified|date:"d/m/Y H:i" }}{% else %}Not verified{% endif %}</td></tr>
+        </tbody>
+    </table>
+</div>
 
-<h3 class="ui header">Lead Scoring & Segmentation</h3>
-<table class="ui definition table">
-    <tbody>
-        <tr><td>Lead Score</td><td><strong>{{ lead.lead_score }}</strong></td></tr>
-        <tr><td>Lead Stage</td><td>{% if lead.lead_stage %}{{ lead.get_lead_stage_display }}{% else %}Not assigned{% endif %}</td></tr>
-        <tr><td>Hierarchical Level</td><td>{% if lead.hierarchical_level %}{{ lead.get_hierarchical_level_display }}{% else %}Not specified{% endif %}</td></tr>
-        <tr><td>Enterprise Candidate</td><td>{% if lead.is_candidate_enterprise %}<span class="ui green basic label">Yes</span>{% else %}<span class="ui grey basic label">No</span>{% endif %}</td></tr>
-        <tr><td>Campaign Segment</td><td>{{ lead.campaign_segment|default:"Not assigned" }}</td></tr>
-    </tbody>
-</table>
+<div class="ui bottom attached tab segment" data-tab="company">
+    <table class="ui definition table">
+        <tbody>
+            <tr><td>Company</td><td><a href="{% url 'companies:company_detail' lead.company.domain %}">{{ lead.company.company_name|default:lead.company.domain }}</a></td></tr>
+            <tr><td>Domain</td><td>{{ lead.company.domain }}</td></tr>
+            <tr><td>Free Email</td><td>{% if lead.is_free_email %}<span class="ui green basic label">Yes</span>{% else %}<span class="ui grey basic label">No</span>{% endif %}</td></tr>
+        </tbody>
+    </table>
+</div>
 
-<h3 class="ui header">Status & Activity</h3>
-<table class="ui definition table">
-    <tbody>
-        <tr><td>Email Status</td><td>{{ lead.get_email_status_display }}</td></tr>
-        <tr><td>Signup Date</td><td>{% if lead.signup_date %}{{ lead.signup_date|date:"d/m/Y H:i" }}{% else %}Not registered{% endif %}</td></tr>
-        <tr><td>Session Count</td><td>{{ lead.session_count|default:"0" }}</td></tr>
-        <tr><td>First Seen</td><td>{% if lead.first_seen %}{{ lead.first_seen|date:"d/m/Y H:i" }}{% else %}Not registered{% endif %}</td></tr>
-        <tr><td>Last Active</td><td>{% if lead.last_active %}{{ lead.last_active|date:"d/m/Y H:i" }}{% else %}Not registered{% endif %}</td></tr>
-        <tr><td>Last Contacted Date</td><td>{% if lead.last_contacted_date %}{{ lead.last_contacted_date|date:"d/m/Y H:i" }}{% else %}Not contacted{% endif %}</td></tr>
-    </tbody>
-</table>
+<div class="ui bottom attached tab segment" data-tab="scoring">
+    <table class="ui definition table">
+        <tbody>
+            <tr><td>Lead Score</td><td><strong>{{ lead.lead_score }}</strong></td></tr>
+            <tr><td>Lead Stage</td><td>{% if lead.lead_stage %}{{ lead.get_lead_stage_display }}{% else %}Not assigned{% endif %}</td></tr>
+            <tr><td>Hierarchical Level</td><td>{% if lead.hierarchical_level %}{{ lead.get_hierarchical_level_display }}{% else %}Not specified{% endif %}</td></tr>
+            <tr><td>Enterprise Candidate</td><td>{% if lead.is_candidate_enterprise %}<span class="ui green basic label">Yes</span>{% else %}<span class="ui grey basic label">No</span>{% endif %}</td></tr>
+            <tr><td>Campaign Segment</td><td>{{ lead.campaign_segment|default:"Not assigned" }}</td></tr>
+        </tbody>
+    </table>
+</div>
 
-<h3 class="ui header">CRM</h3>
-<table class="ui definition table">
-    <tbody>
-        <tr><td>CRM Owner</td><td>{{ lead.crm_owner|default:"Not assigned" }}</td></tr>
-    </tbody>
-</table>
+<div class="ui bottom attached tab segment" data-tab="activity">
+    <table class="ui definition table">
+        <tbody>
+            <tr><td>Email Status</td><td>{{ lead.get_email_status_display }}</td></tr>
+            <tr><td>Signup Date</td><td>{% if lead.signup_date %}{{ lead.signup_date|date:"d/m/Y H:i" }}{% else %}Not registered{% endif %}</td></tr>
+            <tr><td>Session Count</td><td>{{ lead.session_count|default:"0" }}</td></tr>
+            <tr><td>First Seen</td><td>{% if lead.first_seen %}{{ lead.first_seen|date:"d/m/Y H:i" }}{% else %}Not registered{% endif %}</td></tr>
+            <tr><td>Last Active</td><td>{% if lead.last_active %}{{ lead.last_active|date:"d/m/Y H:i" }}{% else %}Not registered{% endif %}</td></tr>
+            <tr><td>Last Contacted Date</td><td>{% if lead.last_contacted_date %}{{ lead.last_contacted_date|date:"d/m/Y H:i" }}{% else %}Not contacted{% endif %}</td></tr>
+        </tbody>
+    </table>
+</div>
 
-<h3 class="ui header">System Dates</h3>
-<table class="ui definition table">
-    <tbody>
-        <tr><td>Created</td><td>{{ lead.created_at|date:"d/m/Y H:i" }}</td></tr>
-        <tr><td>Last Updated</td><td>{{ lead.updated_at|date:"d/m/Y H:i" }}</td></tr>
-    </tbody>
-</table>
+<div class="ui bottom attached tab segment" data-tab="crm">
+    <table class="ui definition table">
+        <tbody>
+            <tr><td>CRM Owner</td><td>{{ lead.crm_owner|default:"Not assigned" }}</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="ui bottom attached tab segment" data-tab="system">
+    <table class="ui definition table">
+        <tbody>
+            <tr><td>Created</td><td>{{ lead.created_at|date:"d/m/Y H:i" }}</td></tr>
+            <tr><td>Last Updated</td><td>{{ lead.updated_at|date:"d/m/Y H:i" }}</td></tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        var tabs = document.getElementById('lead-detail-tabs');
+        if (!tabs) return;
+        $('#lead-detail-tabs .item').tab();
+    })();
+</script>
 {% endblock %}
